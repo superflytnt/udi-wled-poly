@@ -20,19 +20,19 @@
         <range uom="56" min="0" max="65535" step="1" />
     </editor>
     
-    <!-- Effect selector - common WLED effects -->
+    <!-- Effect selector - WLED effects (extended range for newer versions) -->
     <editor id="effect">
-        <range uom="25" subset="0-117" nls="effect" />
+        <range uom="25" subset="0-187" nls="effect" />
     </editor>
     
-    <!-- Palette selector - common WLED palettes -->
+    <!-- Palette selector - WLED palettes (extended range) -->
     <editor id="palette">
-        <range uom="25" subset="0-55" nls="palette" />
+        <range uom="25" subset="0-71" nls="palette" />
     </editor>
     
-    <!-- Preset selector 1-16 -->
+    <!-- Preset selector 0-255 (0 = none, 1-250 = presets) -->
     <editor id="preset">
-        <range uom="25" subset="1-16" nls="preset" />
+        <range uom="25" subset="0-250" nls="preset" />
     </editor>
 </editors>
 

@@ -361,16 +361,20 @@ class Controller(udi_interface.Node):
                 with open(nls_file, 'r') as f:
                     existing_lines = f.readlines()
             
-            # Remove old preset entries
-            filtered_lines = [line for line in existing_lines if not line.startswith('PRESET_')]
+            # Remove old auto-generated preset entries (keep default ones)
+            filtered_lines = [line for line in existing_lines 
+                             if not (line.startswith('PRESET-') and 'auto-generated' not in line 
+                                    and any(c.isdigit() for c in line.split('=')[0] if '=' in line))]
+            # Also remove the auto-generated header
+            filtered_lines = [line for line in filtered_lines if 'WLED Presets (auto-generated)' not in line]
             
-            # Add new preset entries
-            preset_lines = ["\n# WLED Presets (auto-generated)\n"]
+            # Add new preset entries with "ID: Name" format
+            preset_lines = ["\n# WLED Presets (auto-generated from devices)\n"]
             for preset_id in sorted(presets.keys()):
                 preset_name = presets[preset_id]
-                # Sanitize preset name for NLS
+                # Sanitize preset name for NLS and add number prefix
                 safe_name = preset_name.replace('"', "'").replace('\n', ' ')
-                preset_lines.append(f"PRESET_{preset_id} = {safe_name}\n")
+                preset_lines.append(f"PRESET-{preset_id} = {preset_id}: {safe_name}\n")
             
             # Write updated NLS file
             with open(nls_file, 'w') as f:
