@@ -67,6 +67,7 @@ class Controller(udi_interface.Node):
     
     def start(self):
         """Start the controller node"""
+        import datetime
         LOGGER.info(f"Starting WLED Controller: {self.name}")
         
         # Initialize WLED API
@@ -87,6 +88,10 @@ class Controller(udi_interface.Node):
         # Auto-discover additional WLED devices on startup (this can take a while)
         LOGGER.info("Running auto-discovery for WLED devices...")
         self.discover()
+        
+        # Show startup notice
+        timestamp = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        self.poly.Notices['startup'] = f"INFO: {timestamp} WLED Controller started with {len(self._devices)} device(s)"
         
         LOGGER.info("WLED Controller started successfully")
     
@@ -114,12 +119,30 @@ class Controller(udi_interface.Node):
     def _set_config_docs(self):
         """Set configuration documentation - displays in PG3 Configuration tab"""
         html = '''
-<h3>WLED Device Configuration</h3>
-<p><b>devices</b> - Comma-separated list of WLED devices to add manually.</p>
-<p><b>Format:</b> <code>name1:ip1,name2:ip2</code></p>
-<p><b>Example:</b> <code>arcade:192.168.1.112,bar:192.168.1.185</code></p>
+<h2>WLED Polyglot v3 NodeServer</h2>
+
+<h3>Configuration</h3>
+<p>To manually add WLED devices, create a custom parameter:</p>
+<table border="1" cellpadding="5" style="border-collapse: collapse;">
+  <tr><th>Key</th><th>Value</th></tr>
+  <tr><td><code>devices</code></td><td><code>name1:ip1,name2:ip2</code></td></tr>
+</table>
+
+<p><b>Example:</b></p>
+<pre>Key:   devices
+Value: arcade:192.168.1.112,bar:192.168.1.185,kitchen:192.168.1.99</pre>
+
+<h3>Auto-Discovery</h3>
+<p>Click <b>Discover</b> (above) or use the "Discover Devices" command on the controller node to automatically find WLED devices on your network.</p>
+
 <hr>
-<p><i>Tip: Click "Discover Devices" on the controller node to auto-find WLED devices on your network.</i></p>
+<h3>Links</h3>
+<ul>
+  <li><a href="https://github.com/superflytnt/udi-wled-poly" target="_blank">GitHub Repository</a></li>
+  <li><a href="https://github.com/superflytnt/udi-wled-poly#readme" target="_blank">Documentation</a></li>
+  <li><a href="https://github.com/superflytnt/udi-wled-poly/issues" target="_blank">Report Issues</a></li>
+  <li><a href="https://kno.wled.ge/" target="_blank">WLED Documentation</a></li>
+</ul>
 '''
         self.poly.setCustomParamsDoc(html)
     
@@ -281,11 +304,18 @@ class Controller(udi_interface.Node):
         """
         LOGGER.info("Starting WLED device discovery...")
         
+        # Clear old discovery notice
+        self.poly.Notices.clear()
+        
         try:
             devices = self._wled_api.discover(timeout=10.0)
             
             if devices:
                 LOGGER.info(f"Discovered {len(devices)} WLED device(s)")
+                
+                # Build list of discovered devices for notice
+                device_names = []
+                new_devices = 0
                 
                 for device in devices:
                     ip = device.get('ip')
@@ -295,13 +325,36 @@ class Controller(udi_interface.Node):
                         name = ip.replace('.', '_')
                     
                     LOGGER.info(f"Found WLED device: {name} at {ip}")
+                    
+                    # Check if this is a new device
+                    address = name.lower().replace(' ', '_').replace('.', '_')
+                    address = ''.join(c for c in address if c.isalnum() or c == '_')[:14]
+                    
+                    if address not in self._devices:
+                        new_devices += 1
+                    
+                    device_names.append(f"{name} ({ip})")
                     self._add_wled_device(name, ip)
+                
+                # Show notice with results
+                import datetime
+                timestamp = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+                if new_devices > 0:
+                    self.poly.Notices['discovery'] = f"INFO: {timestamp} Discovery found {len(devices)} WLED device(s), {new_devices} new: {', '.join(device_names)}"
+                else:
+                    self.poly.Notices['discovery'] = f"INFO: {timestamp} Discovery found {len(devices)} WLED device(s) (all already configured): {', '.join(device_names)}"
             else:
-                LOGGER.info("No WLED devices found via mDNS discovery")
+                LOGGER.info("No WLED devices found via discovery")
                 LOGGER.info("Try adding devices manually via configuration")
+                import datetime
+                timestamp = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+                self.poly.Notices['discovery'] = f"INFO: {timestamp} No WLED devices found on network. Add devices manually in Configuration tab."
                 
         except Exception as e:
             LOGGER.error(f"Discovery failed: {e}")
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+            self.poly.Notices['discovery_error'] = f"ERROR: {timestamp} Discovery failed: {e}"
     
     def rebuild_presets(self, command=None):
         """
