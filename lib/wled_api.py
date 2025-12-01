@@ -472,21 +472,23 @@ class WLEDDevice:
 
 class WLEDDiscovery:
     """
-    mDNS Discovery for WLED devices
+    Discovery for WLED devices
     
-    Uses zeroconf to discover WLED devices on the local network.
+    Uses multiple methods to discover WLED devices on the local network:
+    1. mDNS/Zeroconf (preferred)
+    2. HTTP probe of common subnet IPs (fallback)
     """
     
     SERVICE_TYPE = "_wled._tcp.local."
     
     def __init__(self):
         self._discovered: Dict[str, Tuple[str, int, str]] = {}  # mac -> (ip, port, name)
-        self._zeroconf = None
-        self._browser = None
     
-    async def discover(self, timeout: float = 5.0) -> List[Dict[str, Any]]:
+    async def discover(self, timeout: float = 10.0) -> List[Dict[str, Any]]:
         """
         Discover WLED devices on the network.
+        
+        Tries mDNS first, then falls back to HTTP probing.
         
         Args:
             timeout: Discovery timeout in seconds
@@ -494,9 +496,31 @@ class WLEDDiscovery:
         Returns:
             List of discovered devices with ip, port, name, mac
         """
+        devices = []
+        
+        # Try mDNS discovery first
         try:
-            from zeroconf import Zeroconf, ServiceBrowser
-            from zeroconf.asyncio import AsyncZeroconf, AsyncServiceBrowser
+            mdns_devices = await self._discover_mdns(timeout / 2)
+            devices.extend(mdns_devices)
+            LOGGER.info(f"mDNS discovery found {len(mdns_devices)} device(s)")
+        except Exception as e:
+            LOGGER.warning(f"mDNS discovery failed: {e}, trying HTTP probe...")
+        
+        # If mDNS didn't find anything, try HTTP probing
+        if not devices:
+            try:
+                http_devices = await self._discover_http_probe(timeout / 2)
+                devices.extend(http_devices)
+                LOGGER.info(f"HTTP probe found {len(http_devices)} device(s)")
+            except Exception as e:
+                LOGGER.error(f"HTTP probe failed: {e}")
+        
+        return devices
+    
+    async def _discover_mdns(self, timeout: float = 5.0) -> List[Dict[str, Any]]:
+        """Discover via mDNS/Zeroconf"""
+        try:
+            from zeroconf import Zeroconf, ServiceBrowser, InterfaceChoice, IPVersion
         except ImportError:
             LOGGER.error("zeroconf library not installed")
             return []
@@ -505,27 +529,30 @@ class WLEDDiscovery:
         discovered_ips = set()
         
         class WLEDListener:
-            def __init__(self, parent):
-                self.parent = parent
+            def __init__(self):
+                pass
             
             def add_service(self, zc, service_type, name):
-                info = zc.get_service_info(service_type, name)
-                if info:
-                    ip = None
-                    if info.addresses:
-                        import socket
-                        ip = socket.inet_ntoa(info.addresses[0])
-                    
-                    if ip and ip not in discovered_ips:
-                        discovered_ips.add(ip)
-                        device = {
-                            'ip': ip,
-                            'port': info.port or 80,
-                            'name': info.server.rstrip('.') if info.server else name,
-                            'mac': info.properties.get(b'mac', b'').decode('utf-8', errors='ignore')
-                        }
-                        devices.append(device)
-                        LOGGER.info(f"Discovered WLED device: {device['name']} at {ip}")
+                try:
+                    info = zc.get_service_info(service_type, name)
+                    if info:
+                        ip = None
+                        if info.addresses:
+                            import socket
+                            ip = socket.inet_ntoa(info.addresses[0])
+                        
+                        if ip and ip not in discovered_ips:
+                            discovered_ips.add(ip)
+                            device = {
+                                'ip': ip,
+                                'port': info.port or 80,
+                                'name': info.server.rstrip('.') if info.server else name,
+                                'mac': info.properties.get(b'mac', b'').decode('utf-8', errors='ignore') if info.properties else ''
+                            }
+                            devices.append(device)
+                            LOGGER.info(f"mDNS discovered WLED: {device['name']} at {ip}")
+                except Exception as e:
+                    LOGGER.debug(f"Error processing mDNS service: {e}")
             
             def remove_service(self, zc, service_type, name):
                 pass
@@ -533,21 +560,107 @@ class WLEDDiscovery:
             def update_service(self, zc, service_type, name):
                 pass
         
+        zc = None
+        browser = None
         try:
-            zc = Zeroconf()
-            listener = WLEDListener(self)
+            # Try to create Zeroconf with settings that work on systems with existing mDNS
+            zc = Zeroconf(interfaces=InterfaceChoice.Default, ip_version=IPVersion.V4Only)
+            listener = WLEDListener()
             browser = ServiceBrowser(zc, self.SERVICE_TYPE, listener)
             
             # Wait for discovery
             await asyncio.sleep(timeout)
             
-            browser.cancel()
-            zc.close()
-            
-        except Exception as e:
-            LOGGER.error(f"mDNS discovery error: {e}")
+        except OSError as e:
+            if e.errno == 48:  # Address already in use
+                LOGGER.warning("mDNS port in use, trying alternative method...")
+                # Try with unicast queries only
+                try:
+                    if zc:
+                        zc.close()
+                    zc = Zeroconf(interfaces=InterfaceChoice.All, ip_version=IPVersion.V4Only)
+                    listener = WLEDListener()
+                    browser = ServiceBrowser(zc, self.SERVICE_TYPE, listener)
+                    await asyncio.sleep(timeout)
+                except Exception as e2:
+                    LOGGER.debug(f"Alternative mDNS also failed: {e2}")
+            else:
+                raise
+        finally:
+            if browser:
+                browser.cancel()
+            if zc:
+                zc.close()
         
         return devices
+    
+    async def _discover_http_probe(self, timeout: float = 5.0) -> List[Dict[str, Any]]:
+        """
+        Discover WLED devices by probing common IP addresses.
+        
+        This is a fallback when mDNS doesn't work.
+        """
+        devices = []
+        
+        # Get local IP to determine subnet
+        local_ip = await self._get_local_ip()
+        if not local_ip:
+            LOGGER.warning("Could not determine local IP for HTTP probe")
+            return devices
+        
+        # Generate IPs to probe (same /24 subnet)
+        subnet_prefix = '.'.join(local_ip.split('.')[:3])
+        ips_to_probe = [f"{subnet_prefix}.{i}" for i in range(1, 255)]
+        
+        LOGGER.info(f"Probing subnet {subnet_prefix}.0/24 for WLED devices...")
+        
+        # Probe in parallel with limited concurrency
+        semaphore = asyncio.Semaphore(50)  # Max 50 concurrent requests
+        
+        async def probe_ip(ip: str) -> Optional[Dict[str, Any]]:
+            async with semaphore:
+                try:
+                    timeout_obj = aiohttp.ClientTimeout(total=1.0)
+                    async with aiohttp.ClientSession(timeout=timeout_obj) as session:
+                        async with session.get(f"http://{ip}/json/info") as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                # Check if it's a WLED device
+                                if 'ver' in data and 'name' in data:
+                                    device = {
+                                        'ip': ip,
+                                        'port': 80,
+                                        'name': data.get('name', ip),
+                                        'mac': data.get('mac', '')
+                                    }
+                                    LOGGER.info(f"HTTP probe found WLED: {device['name']} at {ip}")
+                                    return device
+                except:
+                    pass  # Expected for non-WLED IPs
+                return None
+        
+        # Run probes concurrently
+        tasks = [probe_ip(ip) for ip in ips_to_probe]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results:
+            if isinstance(result, dict):
+                devices.append(result)
+        
+        return devices
+    
+    async def _get_local_ip(self) -> Optional[str]:
+        """Get local IP address"""
+        import socket
+        try:
+            # Connect to a remote address to determine local IP
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return None
     
     async def discover_simple(self, timeout: float = 5.0) -> List[str]:
         """
