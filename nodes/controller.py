@@ -116,7 +116,9 @@ class Controller(udi_interface.Node):
         config = {
             'devices': {
                 'name': 'WLED Devices',
-                'desc': 'List of WLED devices in format: name1:ip1,name2:ip2',
+                'desc': 'Comma-separated list of WLED devices. Format: name:ip,name:ip<br><br>'
+                        '<b>Example:</b> arcade:192.168.1.112,bar:192.168.1.185<br><br>'
+                        '<i>Tip: Use "Discover Devices" to auto-find WLED devices on your network.</i>',
                 'default': '',
                 'isRequired': False
             }
