@@ -113,17 +113,14 @@ class Controller(udi_interface.Node):
     
     def _set_config_docs(self):
         """Set configuration documentation"""
-        config = {
-            'devices': {
-                'name': 'WLED Devices',
-                'desc': 'Comma-separated list of WLED devices. Format: name:ip,name:ip<br><br>'
-                        '<b>Example:</b> arcade:192.168.1.112,bar:192.168.1.185<br><br>'
-                        '<i>Tip: Use "Discover Devices" to auto-find WLED devices on your network.</i>',
-                'default': '',
-                'isRequired': False
-            }
-        }
-        self.poly.setCustomParamsDoc(config)
+        # Note: PG3 displays this as help text for configuration parameters
+        self.poly.setCustomParamsDoc([
+            '<h3>WLED Device Configuration</h3>',
+            '<p><b>devices</b> - Comma-separated list of WLED devices</p>',
+            '<p>Format: <code>name1:ip1,name2:ip2</code></p>',
+            '<p>Example: <code>arcade:192.168.1.112,bar:192.168.1.185</code></p>',
+            '<p><i>Tip: Click "Discover Devices" to auto-find WLED devices on your network.</i></p>',
+        ])
     
     def _parse_devices(self, devices_str: str):
         """
