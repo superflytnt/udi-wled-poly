@@ -6,7 +6,6 @@ including brightness, effects, palettes, presets, and color.
 """
 
 import udi_interface
-import asyncio
 import logging
 from typing import Optional, Any
 
@@ -81,35 +80,14 @@ class WLEDDevice(udi_interface.Node):
         polyglot.addNode(self)
         
         # Initial status update
-        self._run_async(self.update_status(full_sync=True))
+        self.update_status(full_sync=True)
     
     def _init_device(self):
         """Initialize WLED device connection"""
-        if self._wled_api:
-            self._device = self._wled_api.add_device(self.name, self._ip, self._port)
-        else:
-            # Create standalone device
-            from lib.wled_api import WLEDDevice as WLEDApiDevice
-            self._device = WLEDApiDevice(self._ip, self._port)
+        from lib.wled_api import WLEDDevice as WLEDApiDevice
+        self._device = WLEDApiDevice(self._ip, self._port)
     
-    def _run_async(self, coro):
-        """Run an async coroutine in sync context"""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # Schedule for later execution
-                asyncio.ensure_future(coro)
-            else:
-                loop.run_until_complete(coro)
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(coro)
-            finally:
-                loop.close()
-    
-    async def update_status(self, full_sync: bool = False):
+    def update_status(self, full_sync: bool = False):
         """
         Update node status from device.
         
@@ -123,10 +101,10 @@ class WLEDDevice(udi_interface.Node):
         try:
             if full_sync:
                 # Get all data
-                success = await self._device.get_all()
+                success = self._device.get_all()
             else:
                 # Just get state
-                await self._device.get_state()
+                self._device.get_state()
                 success = self._device.online
             
             # Update online status
@@ -168,137 +146,107 @@ class WLEDDevice(udi_interface.Node):
     def query(self, command=None):
         """Query device status"""
         LOGGER.info(f"Query: {self.name}")
-        self._run_async(self.update_status(full_sync=True))
+        self.update_status(full_sync=True)
         self.reportDrivers()
     
     def cmd_on(self, command=None):
         """Turn on the device"""
         LOGGER.info(f"Turn On: {self.name}")
         
-        # Check for brightness parameter
-        brightness = None
-        if command and 'value' in command:
-            brightness = int(command['value'])
-        
-        async def _on():
-            if self._device:
-                await self._device.turn_on()
-                if brightness is not None:
-                    # Convert percentage to 0-255
-                    bri_val = int((brightness / 100) * 255)
-                    await self._device.set_brightness(bri_val)
-                await self.update_status()
-        
-        self._run_async(_on())
+        if self._device:
+            # Check for brightness parameter
+            brightness = None
+            if command and 'value' in command:
+                brightness = int(command['value'])
+            
+            self._device.set_power(True)
+            if brightness is not None:
+                # Convert percentage to 0-255
+                bri_val = int((brightness / 100) * 255)
+                self._device.set_brightness(bri_val)
+            self.update_status()
     
     def cmd_off(self, command=None):
         """Turn off the device"""
         LOGGER.info(f"Turn Off: {self.name}")
         
-        async def _off():
-            if self._device:
-                await self._device.turn_off()
-                await self.update_status()
-        
-        self._run_async(_off())
+        if self._device:
+            self._device.set_power(False)
+            self.update_status()
     
     def cmd_fast_on(self, command=None):
         """Fast on (instant, no transition)"""
         LOGGER.info(f"Fast On: {self.name}")
         
-        async def _fast_on():
-            if self._device:
-                await self._device.set_state(on=True, transition=0)
-                await self.update_status()
-        
-        self._run_async(_fast_on())
+        if self._device:
+            self._device.set_state(on=True, transition=0)
+            self.update_status()
     
     def cmd_fast_off(self, command=None):
         """Fast off (instant, no transition)"""
         LOGGER.info(f"Fast Off: {self.name}")
         
-        async def _fast_off():
-            if self._device:
-                await self._device.set_state(on=False, transition=0)
-                await self.update_status()
-        
-        self._run_async(_fast_off())
+        if self._device:
+            self._device.set_state(on=False, transition=0)
+            self.update_status()
     
     def cmd_brighten(self, command=None):
         """Brighten by 10%"""
         LOGGER.info(f"Brighten: {self.name}")
         
-        async def _brighten():
-            if self._device and self._device.state:
-                current = self._device.state.brightness
-                new_bri = min(255, current + 25)  # +10% roughly
-                await self._device.set_brightness(new_bri)
-                await self.update_status()
-        
-        self._run_async(_brighten())
+        if self._device and self._device.state:
+            current = self._device.state.brightness
+            new_bri = min(255, current + 25)  # +10% roughly
+            self._device.set_brightness(new_bri)
+            self.update_status()
     
     def cmd_dim(self, command=None):
         """Dim by 10%"""
         LOGGER.info(f"Dim: {self.name}")
         
-        async def _dim():
-            if self._device and self._device.state:
-                current = self._device.state.brightness
-                new_bri = max(0, current - 25)  # -10% roughly
-                await self._device.set_brightness(new_bri)
-                await self.update_status()
-        
-        self._run_async(_dim())
+        if self._device and self._device.state:
+            current = self._device.state.brightness
+            new_bri = max(0, current - 25)  # -10% roughly
+            self._device.set_brightness(new_bri)
+            self.update_status()
     
     def cmd_set_brightness(self, command):
         """Set brightness percentage"""
         brightness = int(command.get('value', 100))
         LOGGER.info(f"Set Brightness: {self.name} to {brightness}%")
         
-        async def _set_bri():
-            if self._device:
-                # Convert percentage to 0-255
-                bri_val = int((brightness / 100) * 255)
-                await self._device.set_brightness(bri_val)
-                await self.update_status()
-        
-        self._run_async(_set_bri())
+        if self._device:
+            # Convert percentage to 0-255
+            bri_val = int((brightness / 100) * 255)
+            self._device.set_brightness(bri_val)
+            self.update_status()
     
     def cmd_set_effect(self, command):
         """Set effect by ID"""
         effect_id = int(command.get('value', 0))
         LOGGER.info(f"Set Effect: {self.name} to {effect_id}")
         
-        async def _set_effect():
-            if self._device:
-                await self._device.set_effect(effect_id)
-                await self.update_status()
-        
-        self._run_async(_set_effect())
+        if self._device:
+            self._device.set_effect(effect_id)
+            self.update_status()
     
     def cmd_set_palette(self, command):
         """Set palette by ID"""
         palette_id = int(command.get('value', 0))
         LOGGER.info(f"Set Palette: {self.name} to {palette_id}")
         
-        async def _set_palette():
-            if self._device:
-                await self._device.set_palette(palette_id)
-                await self.update_status()
-        
-        self._run_async(_set_palette())
+        if self._device:
+            self._device.set_palette(palette_id)
+            self.update_status()
     
     def cmd_set_preset(self, command):
         """Load a preset"""
         preset_id = int(command.get('value', 1))
         LOGGER.info(f"Load Preset: {self.name} preset {preset_id}")
         
-        async def _set_preset():
-            if self._device:
-                await self._device.load_preset(preset_id)
-                await self.update_status()
-        
-        self._run_async(_set_preset())
+        if self._device:
+            self._device.set_preset(preset_id)
+            self.update_status()
     
     def cmd_set_color(self, command):
         """Set RGB color"""
@@ -308,40 +256,33 @@ class WLEDDevice(udi_interface.Node):
         
         LOGGER.info(f"Set Color: {self.name} to RGB({r},{g},{b})")
         
-        async def _set_color():
-            if self._device:
-                await self._device.set_color(r, g, b)
-                await self.update_status()
-        
-        self._run_async(_set_color())
+        if self._device:
+            self._device.set_color(r, g, b)
+            self.update_status()
     
     def cmd_set_speed(self, command):
         """Set effect speed"""
         speed = int(command.get('value', 128))
         LOGGER.info(f"Set Speed: {self.name} to {speed}%")
         
-        async def _set_speed():
-            if self._device:
-                # Convert percentage to 0-255
-                speed_val = int((speed / 100) * 255)
-                await self._device.set_effect_speed(speed_val)
-                await self.update_status()
-        
-        self._run_async(_set_speed())
+        if self._device:
+            # Convert percentage to 0-255 and set via effect
+            speed_val = int((speed / 100) * 255)
+            if self._device.state:
+                self._device.set_effect(self._device.state.effect, speed=speed_val)
+            self.update_status()
     
     def cmd_set_intensity(self, command):
         """Set effect intensity"""
         intensity = int(command.get('value', 128))
         LOGGER.info(f"Set Intensity: {self.name} to {intensity}%")
         
-        async def _set_intensity():
-            if self._device:
-                # Convert percentage to 0-255
-                intensity_val = int((intensity / 100) * 255)
-                await self._device.set_effect_intensity(intensity_val)
-                await self.update_status()
-        
-        self._run_async(_set_intensity())
+        if self._device:
+            # Convert percentage to 0-255 and set via effect
+            intensity_val = int((intensity / 100) * 255)
+            if self._device.state:
+                self._device.set_effect(self._device.state.effect, intensity=intensity_val)
+            self.update_status()
     
     # Command handlers
     commands = {
@@ -360,4 +301,3 @@ class WLEDDevice(udi_interface.Node):
         'SET_INTENSITY': cmd_set_intensity,
         'QUERY': query,
     }
-

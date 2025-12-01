@@ -1,15 +1,15 @@
 """
 WLED JSON API Client
 
-Provides async HTTP client for communicating with WLED devices
+Provides HTTP client for communicating with WLED devices
 using the JSON API (recommended over HTTP API for full feature support).
 
 API Documentation: https://kno.wled.ge/interfaces/json-api/
 """
 
-import asyncio
-import aiohttp
+import requests
 import logging
+import socket
 from typing import Optional, Dict, List, Any, Tuple
 from dataclasses import dataclass, field
 
@@ -160,9 +160,10 @@ class WLEDDevice:
     WLED Device API Client
     
     Handles all communication with a single WLED device via the JSON API.
+    Uses synchronous requests for compatibility with PG3.
     """
     
-    def __init__(self, host: str, port: int = 80, timeout: int = 10):
+    def __init__(self, host: str, port: int = 80, timeout: int = 5):
         """
         Initialize WLED device client.
         
@@ -175,7 +176,6 @@ class WLEDDevice:
         self.port = port
         self.timeout = timeout
         self._base_url = f"http://{host}:{port}"
-        self._session: Optional[aiohttp.ClientSession] = None
         
         # Cached data
         self._state: Optional[WLEDState] = None
@@ -218,21 +218,8 @@ class WLEDDevice:
         """Get cached presets"""
         return self._presets
     
-    async def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create HTTP session"""
-        if self._session is None or self._session.closed:
-            timeout = aiohttp.ClientTimeout(total=self.timeout)
-            self._session = aiohttp.ClientSession(timeout=timeout)
-        return self._session
-    
-    async def close(self):
-        """Close HTTP session"""
-        if self._session and not self._session.closed:
-            await self._session.close()
-            self._session = None
-    
-    async def _request(self, method: str, endpoint: str, 
-                       json_data: Optional[Dict] = None) -> Optional[Dict]:
+    def _request(self, method: str, endpoint: str, 
+                 json_data: Optional[Dict] = None) -> Optional[Dict]:
         """
         Make HTTP request to WLED device.
         
@@ -247,37 +234,36 @@ class WLEDDevice:
         url = f"{self._base_url}{endpoint}"
         
         try:
-            session = await self._get_session()
-            
             if method == "GET":
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        self._online = True
-                        self._last_error = None
-                        return await response.json()
-                    else:
-                        self._last_error = f"HTTP {response.status}"
-                        LOGGER.warning(f"WLED {self.host}: HTTP {response.status} on {endpoint}")
-                        
+                response = requests.get(url, timeout=self.timeout)
             elif method == "POST":
-                async with session.post(url, json=json_data) as response:
-                    if response.status == 200:
-                        self._online = True
-                        self._last_error = None
-                        return await response.json()
-                    else:
-                        self._last_error = f"HTTP {response.status}"
-                        LOGGER.warning(f"WLED {self.host}: HTTP {response.status} on {endpoint}")
-                        
-        except asyncio.TimeoutError:
+                response = requests.post(url, json=json_data, timeout=self.timeout)
+            else:
+                LOGGER.error(f"WLED {self.host}: Unknown method {method}")
+                return None
+            
+            if response.status_code == 200:
+                self._online = True
+                self._last_error = None
+                return response.json()
+            else:
+                self._last_error = f"HTTP {response.status_code}"
+                LOGGER.warning(f"WLED {self.host}: HTTP {response.status_code} on {endpoint}")
+                
+        except requests.exceptions.Timeout:
             self._online = False
             self._last_error = "Timeout"
             LOGGER.warning(f"WLED {self.host}: Request timeout")
             
-        except aiohttp.ClientError as e:
+        except requests.exceptions.ConnectionError as e:
+            self._online = False
+            self._last_error = "Connection error"
+            LOGGER.warning(f"WLED {self.host}: Connection error - {e}")
+            
+        except requests.exceptions.RequestException as e:
             self._online = False
             self._last_error = str(e)
-            LOGGER.warning(f"WLED {self.host}: Connection error - {e}")
+            LOGGER.error(f"WLED {self.host}: Request error - {e}")
             
         except Exception as e:
             self._online = False
@@ -286,14 +272,14 @@ class WLEDDevice:
             
         return None
     
-    async def get_all(self) -> bool:
+    def get_all(self) -> bool:
         """
         Fetch all data from device (state, info, effects, palettes).
         
         Returns:
             True if successful, False otherwise
         """
-        data = await self._request("GET", "/json")
+        data = self._request("GET", "/json")
         
         if data:
             # Parse state
@@ -316,9 +302,14 @@ class WLEDDevice:
         
         return False
     
-    async def get_state(self) -> Optional[WLEDState]:
-        """Fetch current state from device"""
-        data = await self._request("GET", "/json/state")
+    def get_state(self) -> Optional[WLEDState]:
+        """
+        Fetch current state from device.
+        
+        Returns:
+            WLEDState or None on error
+        """
+        data = self._request("GET", "/json/state")
         
         if data:
             self._state = WLEDState.from_json(data)
@@ -326,9 +317,14 @@ class WLEDDevice:
         
         return None
     
-    async def get_info(self) -> Optional[WLEDInfo]:
-        """Fetch device info"""
-        data = await self._request("GET", "/json/info")
+    def get_info(self) -> Optional[WLEDInfo]:
+        """
+        Fetch device info.
+        
+        Returns:
+            WLEDInfo or None on error
+        """
+        data = self._request("GET", "/json/info")
         
         if data:
             self._info = WLEDInfo.from_json(data)
@@ -336,159 +332,101 @@ class WLEDDevice:
         
         return None
     
-    async def get_effects(self) -> List[str]:
-        """Fetch available effects"""
-        data = await self._request("GET", "/json/eff")
-        
-        if data and isinstance(data, list):
-            self._effects = [e for e in data if e and e != '-']
-        
-        return self._effects
-    
-    async def get_palettes(self) -> List[str]:
-        """Fetch available palettes"""
-        data = await self._request("GET", "/json/pal")
-        
-        if data and isinstance(data, list):
-            self._palettes = [p for p in data if p and p != '-']
-        
-        return self._palettes
-    
-    async def get_presets(self) -> Dict[int, str]:
-        """Fetch saved presets"""
-        data = await self._request("GET", "/presets.json")
-        
-        if data:
-            self._presets = {}
-            for key, value in data.items():
-                try:
-                    preset_id = int(key)
-                    if isinstance(value, dict) and 'n' in value:
-                        self._presets[preset_id] = value['n']
-                    elif isinstance(value, dict):
-                        self._presets[preset_id] = f"Preset {preset_id}"
-                except (ValueError, TypeError):
-                    continue
-        
-        return self._presets
-    
-    async def set_state(self, **kwargs) -> bool:
+    def set_state(self, **kwargs) -> bool:
         """
         Set device state.
         
-        Supported kwargs:
-            on: bool - Power state
-            bri: int - Brightness (0-255)
-            transition: int - Transition time (0-255, in 100ms units)
-            ps: int - Load preset
-            pl: int - Load playlist
-            seg: list - Segment settings
+        Args:
+            on: Power state (True/False)
+            bri: Brightness (0-255)
+            transition: Transition time in 100ms units
+            ps: Preset to load (-1 for none)
+            seg: Segment settings (list of dicts)
             
         Returns:
             True if successful
         """
-        data = await self._request("POST", "/json/state", kwargs)
+        data = self._request("POST", "/json/state", kwargs)
         
         if data:
+            # Update cached state
             self._state = WLEDState.from_json(data)
             return True
         
         return False
     
-    # Convenience methods
+    def set_power(self, on: bool) -> bool:
+        """Turn device on or off"""
+        LOGGER.info(f"WLED {self.host}: Setting power to {on}")
+        return self.set_state(on=on)
     
-    async def turn_on(self) -> bool:
-        """Turn on the device"""
-        return await self.set_state(on=True)
-    
-    async def turn_off(self) -> bool:
-        """Turn off the device"""
-        return await self.set_state(on=False)
-    
-    async def toggle(self) -> bool:
-        """Toggle power state"""
-        return await self.set_state(on="t")
-    
-    async def set_brightness(self, brightness: int) -> bool:
+    def set_brightness(self, brightness: int) -> bool:
         """Set brightness (0-255)"""
         brightness = max(0, min(255, brightness))
-        return await self.set_state(bri=brightness)
+        LOGGER.info(f"WLED {self.host}: Setting brightness to {brightness}")
+        return self.set_state(bri=brightness)
     
-    async def set_color(self, r: int, g: int, b: int, segment: int = 0) -> bool:
-        """Set RGB color for a segment"""
+    def set_effect(self, effect_id: int, speed: Optional[int] = None, 
+                   intensity: Optional[int] = None) -> bool:
+        """Set effect on main segment"""
+        seg_data = {"fx": effect_id}
+        if speed is not None:
+            seg_data["sx"] = max(0, min(255, speed))
+        if intensity is not None:
+            seg_data["ix"] = max(0, min(255, intensity))
+        
+        LOGGER.info(f"WLED {self.host}: Setting effect to {effect_id}")
+        return self.set_state(seg=[seg_data])
+    
+    def set_palette(self, palette_id: int) -> bool:
+        """Set palette on main segment"""
+        LOGGER.info(f"WLED {self.host}: Setting palette to {palette_id}")
+        return self.set_state(seg=[{"pal": palette_id}])
+    
+    def set_color(self, r: int, g: int, b: int, w: int = 0) -> bool:
+        """Set primary color on main segment"""
         r = max(0, min(255, r))
         g = max(0, min(255, g))
         b = max(0, min(255, b))
+        w = max(0, min(255, w))
         
-        return await self.set_state(seg=[{"id": segment, "col": [[r, g, b]]}])
+        LOGGER.info(f"WLED {self.host}: Setting color to RGB({r},{g},{b})")
+        return self.set_state(seg=[{"col": [[r, g, b, w]]}])
     
-    async def set_effect(self, effect_id: int, segment: int = 0) -> bool:
-        """Set effect by ID"""
-        return await self.set_state(seg=[{"id": segment, "fx": effect_id}])
+    def set_preset(self, preset_id: int) -> bool:
+        """Load a preset"""
+        LOGGER.info(f"WLED {self.host}: Loading preset {preset_id}")
+        return self.set_state(ps=preset_id)
     
-    async def set_palette(self, palette_id: int, segment: int = 0) -> bool:
-        """Set palette by ID"""
-        return await self.set_state(seg=[{"id": segment, "pal": palette_id}])
-    
-    async def set_effect_speed(self, speed: int, segment: int = 0) -> bool:
-        """Set effect speed (0-255)"""
-        speed = max(0, min(255, speed))
-        return await self.set_state(seg=[{"id": segment, "sx": speed}])
-    
-    async def set_effect_intensity(self, intensity: int, segment: int = 0) -> bool:
-        """Set effect intensity (0-255)"""
-        intensity = max(0, min(255, intensity))
-        return await self.set_state(seg=[{"id": segment, "ix": intensity}])
-    
-    async def load_preset(self, preset_id: int) -> bool:
-        """Load a preset by ID"""
-        return await self.set_state(ps=preset_id)
-    
-    async def save_preset(self, preset_id: int, name: Optional[str] = None) -> bool:
-        """Save current state to a preset"""
-        data = {"psave": preset_id}
-        if name:
-            data["n"] = name
-        return await self.set_state(**data)
-    
-    async def set_segment(self, segment_id: int, **kwargs) -> bool:
+    def set_segment_state(self, segment_id: int, **kwargs) -> bool:
         """
-        Set segment-specific settings.
+        Set state for a specific segment.
         
-        Supported kwargs:
-            on: bool - Segment on/off
-            bri: int - Segment brightness
-            fx: int - Effect ID
-            sx: int - Effect speed
-            ix: int - Effect intensity
-            pal: int - Palette ID
-            col: list - Colors [[r,g,b], ...]
-            start: int - Start LED
-            stop: int - Stop LED
+        Args:
+            segment_id: Segment ID (0-based)
+            on: Segment power state
+            bri: Segment brightness
+            fx: Effect ID
+            pal: Palette ID
+            col: Colors [[r,g,b], ...]
         """
         seg_data = {"id": segment_id, **kwargs}
-        return await self.set_state(seg=[seg_data])
+        return self.set_state(seg=[seg_data])
 
 
 class WLEDDiscovery:
     """
     Discovery for WLED devices
     
-    Uses multiple methods to discover WLED devices on the local network:
-    1. mDNS/Zeroconf (preferred)
-    2. HTTP probe of common subnet IPs (fallback)
+    Uses HTTP probe to discover WLED devices on the local network.
     """
     
-    SERVICE_TYPE = "_wled._tcp.local."
-    
     def __init__(self):
-        self._discovered: Dict[str, Tuple[str, int, str]] = {}  # mac -> (ip, port, name)
+        self._discovered: Dict[str, Dict[str, Any]] = {}
     
-    async def discover(self, timeout: float = 10.0) -> List[Dict[str, Any]]:
+    def discover(self, timeout: float = 10.0) -> List[Dict[str, Any]]:
         """
-        Discover WLED devices on the network.
-        
-        Tries mDNS first, then falls back to HTTP probing.
+        Discover WLED devices on the network using HTTP probing.
         
         Args:
             timeout: Discovery timeout in seconds
@@ -498,114 +436,10 @@ class WLEDDiscovery:
         """
         devices = []
         
-        # Try mDNS discovery first
-        try:
-            mdns_devices = await self._discover_mdns(timeout / 2)
-            devices.extend(mdns_devices)
-            LOGGER.info(f"mDNS discovery found {len(mdns_devices)} device(s)")
-        except Exception as e:
-            LOGGER.warning(f"mDNS discovery failed: {e}, trying HTTP probe...")
-        
-        # If mDNS didn't find anything, try HTTP probing
-        if not devices:
-            try:
-                http_devices = await self._discover_http_probe(timeout / 2)
-                devices.extend(http_devices)
-                LOGGER.info(f"HTTP probe found {len(http_devices)} device(s)")
-            except Exception as e:
-                LOGGER.error(f"HTTP probe failed: {e}")
-        
-        return devices
-    
-    async def _discover_mdns(self, timeout: float = 5.0) -> List[Dict[str, Any]]:
-        """Discover via mDNS/Zeroconf"""
-        try:
-            from zeroconf import Zeroconf, ServiceBrowser, InterfaceChoice, IPVersion
-        except ImportError:
-            LOGGER.error("zeroconf library not installed")
-            return []
-        
-        devices = []
-        discovered_ips = set()
-        
-        class WLEDListener:
-            def __init__(self):
-                pass
-            
-            def add_service(self, zc, service_type, name):
-                try:
-                    info = zc.get_service_info(service_type, name)
-                    if info:
-                        ip = None
-                        if info.addresses:
-                            import socket
-                            ip = socket.inet_ntoa(info.addresses[0])
-                        
-                        if ip and ip not in discovered_ips:
-                            discovered_ips.add(ip)
-                            device = {
-                                'ip': ip,
-                                'port': info.port or 80,
-                                'name': info.server.rstrip('.') if info.server else name,
-                                'mac': info.properties.get(b'mac', b'').decode('utf-8', errors='ignore') if info.properties else ''
-                            }
-                            devices.append(device)
-                            LOGGER.info(f"mDNS discovered WLED: {device['name']} at {ip}")
-                except Exception as e:
-                    LOGGER.debug(f"Error processing mDNS service: {e}")
-            
-            def remove_service(self, zc, service_type, name):
-                pass
-            
-            def update_service(self, zc, service_type, name):
-                pass
-        
-        zc = None
-        browser = None
-        try:
-            # Try to create Zeroconf with settings that work on systems with existing mDNS
-            zc = Zeroconf(interfaces=InterfaceChoice.Default, ip_version=IPVersion.V4Only)
-            listener = WLEDListener()
-            browser = ServiceBrowser(zc, self.SERVICE_TYPE, listener)
-            
-            # Wait for discovery
-            await asyncio.sleep(timeout)
-            
-        except OSError as e:
-            if e.errno == 48:  # Address already in use
-                LOGGER.warning("mDNS port in use, trying alternative method...")
-                # Try with unicast queries only
-                try:
-                    if zc:
-                        zc.close()
-                    zc = Zeroconf(interfaces=InterfaceChoice.All, ip_version=IPVersion.V4Only)
-                    listener = WLEDListener()
-                    browser = ServiceBrowser(zc, self.SERVICE_TYPE, listener)
-                    await asyncio.sleep(timeout)
-                except Exception as e2:
-                    LOGGER.debug(f"Alternative mDNS also failed: {e2}")
-            else:
-                raise
-        finally:
-            if browser:
-                browser.cancel()
-            if zc:
-                zc.close()
-        
-        return devices
-    
-    async def _discover_http_probe(self, timeout: float = 5.0) -> List[Dict[str, Any]]:
-        """
-        Discover WLED devices by probing common IP addresses.
-        
-        This is a fallback when mDNS doesn't work.
-        """
-        devices = []
-        
         # Get local IP to determine subnet
-        local_ip = await self._get_local_ip()
+        local_ip = self._get_local_ip()
         if not local_ip:
-            LOGGER.warning("Could not determine local IP for HTTP probe")
+            LOGGER.warning("Could not determine local IP for discovery")
             return devices
         
         # Generate IPs to probe (same /24 subnet)
@@ -614,46 +448,38 @@ class WLEDDiscovery:
         
         LOGGER.info(f"Probing subnet {subnet_prefix}.0/24 for WLED devices...")
         
-        # Probe in parallel with limited concurrency
-        semaphore = asyncio.Semaphore(50)  # Max 50 concurrent requests
+        # Probe each IP
+        for ip in ips_to_probe:
+            device = self._probe_ip(ip, timeout=1.0)
+            if device:
+                devices.append(device)
         
-        async def probe_ip(ip: str) -> Optional[Dict[str, Any]]:
-            async with semaphore:
-                try:
-                    timeout_obj = aiohttp.ClientTimeout(total=1.0)
-                    async with aiohttp.ClientSession(timeout=timeout_obj) as session:
-                        async with session.get(f"http://{ip}/json/info") as response:
-                            if response.status == 200:
-                                data = await response.json()
-                                # Check if it's a WLED device
-                                if 'ver' in data and 'name' in data:
-                                    device = {
-                                        'ip': ip,
-                                        'port': 80,
-                                        'name': data.get('name', ip),
-                                        'mac': data.get('mac', '')
-                                    }
-                                    LOGGER.info(f"HTTP probe found WLED: {device['name']} at {ip}")
-                                    return device
-                except:
-                    pass  # Expected for non-WLED IPs
-                return None
-        
-        # Run probes concurrently
-        tasks = [probe_ip(ip) for ip in ips_to_probe]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        for result in results:
-            if isinstance(result, dict):
-                devices.append(result)
-        
+        LOGGER.info(f"Discovery found {len(devices)} WLED device(s)")
         return devices
     
-    async def _get_local_ip(self) -> Optional[str]:
-        """Get local IP address"""
-        import socket
+    def _probe_ip(self, ip: str, timeout: float = 1.0) -> Optional[Dict[str, Any]]:
+        """Probe a single IP for WLED device"""
         try:
-            # Connect to a remote address to determine local IP
+            response = requests.get(f"http://{ip}/json/info", timeout=timeout)
+            if response.status_code == 200:
+                data = response.json()
+                # Check if it's a WLED device
+                if 'ver' in data and 'name' in data:
+                    device = {
+                        'ip': ip,
+                        'port': 80,
+                        'name': data.get('name', ip),
+                        'mac': data.get('mac', '')
+                    }
+                    LOGGER.info(f"Discovered WLED: {device['name']} at {ip}")
+                    return device
+        except:
+            pass  # Expected for non-WLED IPs
+        return None
+    
+    def _get_local_ip(self) -> Optional[str]:
+        """Get local IP address"""
+        try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
@@ -662,7 +488,7 @@ class WLEDDiscovery:
         except Exception:
             return None
     
-    async def discover_simple(self, timeout: float = 5.0) -> List[str]:
+    def discover_simple(self, timeout: float = 5.0) -> List[str]:
         """
         Simple discovery returning just IP addresses.
         
@@ -672,7 +498,7 @@ class WLEDDiscovery:
         Returns:
             List of IP addresses
         """
-        devices = await self.discover(timeout)
+        devices = self.discover(timeout)
         return [d['ip'] for d in devices]
 
 
@@ -680,82 +506,50 @@ class WLEDApi:
     """
     High-level WLED API manager for multiple devices.
     
-    Manages connections to multiple WLED devices and provides
-    unified access to all devices.
+    Provides device management and discovery capabilities.
     """
     
     def __init__(self):
         self._devices: Dict[str, WLEDDevice] = {}
         self._discovery = WLEDDiscovery()
     
-    @property
-    def devices(self) -> Dict[str, WLEDDevice]:
-        """Get all managed devices"""
-        return self._devices
-    
-    def add_device(self, name: str, host: str, port: int = 80) -> WLEDDevice:
+    def add_device(self, host: str, port: int = 80) -> WLEDDevice:
         """
-        Add a WLED device to manage.
+        Add a device to manage.
         
         Args:
-            name: Friendly name for the device
             host: IP address or hostname
-            port: HTTP port (default 80)
+            port: HTTP port
             
         Returns:
             WLEDDevice instance
         """
-        device = WLEDDevice(host, port)
-        self._devices[name] = device
-        LOGGER.info(f"Added WLED device: {name} at {host}:{port}")
-        return device
+        key = f"{host}:{port}"
+        if key not in self._devices:
+            self._devices[key] = WLEDDevice(host, port)
+        return self._devices[key]
     
-    def remove_device(self, name: str) -> bool:
-        """Remove a device by name"""
-        if name in self._devices:
-            device = self._devices.pop(name)
-            asyncio.create_task(device.close())
-            LOGGER.info(f"Removed WLED device: {name}")
-            return True
-        return False
+    def get_device(self, host: str, port: int = 80) -> Optional[WLEDDevice]:
+        """Get device by host"""
+        key = f"{host}:{port}"
+        return self._devices.get(key)
     
-    def get_device(self, name: str) -> Optional[WLEDDevice]:
-        """Get a device by name"""
-        return self._devices.get(name)
+    def remove_device(self, host: str, port: int = 80):
+        """Remove a device"""
+        key = f"{host}:{port}"
+        if key in self._devices:
+            del self._devices[key]
     
-    async def discover_devices(self, timeout: float = 5.0) -> List[Dict[str, Any]]:
+    def discover(self, timeout: float = 10.0) -> List[Dict[str, Any]]:
         """
         Discover WLED devices on the network.
         
-        Args:
-            timeout: Discovery timeout in seconds
-            
         Returns:
             List of discovered devices
         """
-        return await self._discovery.discover(timeout)
+        return self._discovery.discover(timeout)
     
-    async def refresh_all(self) -> Dict[str, bool]:
-        """
-        Refresh state for all devices.
-        
-        Returns:
-            Dict of device_name -> success status
-        """
-        results = {}
-        
-        for name, device in self._devices.items():
-            try:
-                results[name] = await device.get_all()
-            except Exception as e:
-                LOGGER.error(f"Failed to refresh {name}: {e}")
-                results[name] = False
-        
-        return results
-    
-    async def close_all(self):
-        """Close all device connections"""
-        for device in self._devices.values():
-            await device.close()
-        self._devices.clear()
-
+    @property
+    def devices(self) -> Dict[str, WLEDDevice]:
+        """Get all managed devices"""
+        return self._devices

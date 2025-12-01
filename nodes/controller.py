@@ -6,7 +6,6 @@ and creates/removes WLED device nodes.
 """
 
 import udi_interface
-import asyncio
 import logging
 from typing import Optional, Dict, Any
 
@@ -254,34 +253,13 @@ class Controller(udi_interface.Node):
             node = device_info.get('node')
             if node:
                 try:
-                    # Run async update in sync context
-                    asyncio.get_event_loop().run_until_complete(
-                        node.update_status(full_sync=full_sync)
-                    )
-                except RuntimeError:
-                    # No event loop running
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        loop.run_until_complete(node.update_status(full_sync=full_sync))
-                    finally:
-                        loop.close()
+                    node.update_status(full_sync=full_sync)
                 except Exception as e:
                     LOGGER.error(f"Failed to poll device {address}: {e}")
     
     def stop(self):
         """Stop the controller node"""
         LOGGER.info("Stopping WLED Controller...")
-        
-        # Close all device connections
-        if self._wled_api:
-            try:
-                asyncio.get_event_loop().run_until_complete(
-                    self._wled_api.close_all()
-                )
-            except:
-                pass
-        
         LOGGER.info("WLED Controller stopped")
     
     def query(self):
@@ -292,24 +270,14 @@ class Controller(udi_interface.Node):
     
     def discover(self, command=None):
         """
-        Discover WLED devices on the network using mDNS.
+        Discover WLED devices on the network.
         
-        This scans the local network for WLED devices advertising
-        via mDNS (_wled._tcp) and adds them automatically.
+        This scans the local network for WLED devices.
         """
         LOGGER.info("Starting WLED device discovery...")
         
         try:
-            # Run async discovery
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            devices = loop.run_until_complete(
-                self._wled_api.discover_devices(timeout=10.0)
-            )
+            devices = self._wled_api.discover(timeout=10.0)
             
             if devices:
                 LOGGER.info(f"Discovered {len(devices)} WLED device(s)")
