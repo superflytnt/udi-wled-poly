@@ -28,6 +28,10 @@
             <st id="GV5" editor="raw_byte" />
             <st id="GV6" editor="raw_byte" />
             <st id="GV7" editor="bool" />
+            <st id="GV8" editor="percent" />
+            <st id="GV9" editor="percent" />
+            <st id="GV10" editor="raw_byte" />
+            <st id="GV11" editor="bool" />
         </sts>
         <cmds>
             <sends />
@@ -62,6 +66,12 @@
                 </cmd>
                 <cmd id="SET_INTENSITY">
                     <p id="" editor="percent" />
+                </cmd>
+                <cmd id="SET_TRANSITION">
+                    <p id="" editor="raw_byte" />
+                </cmd>
+                <cmd id="SET_LIVE">
+                    <p id="" editor="bool" />
                 </cmd>
                 <cmd id="QUERY" />
             </accepts>

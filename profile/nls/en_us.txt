@@ -22,6 +22,10 @@ ST-wled_device-GV4-NAME = Red
 ST-wled_device-GV5-NAME = Green
 ST-wled_device-GV6-NAME = Blue
 ST-wled_device-GV7-NAME = Online
+ST-wled_device-GV8-NAME = Speed
+ST-wled_device-GV9-NAME = Intensity
+ST-wled_device-GV10-NAME = Transition
+ST-wled_device-GV11-NAME = Live Override
 CMD-wled_device-DON-NAME = On
 CMD-wled_device-DOF-NAME = Off
 CMD-wled_device-DFON-NAME = Fast On
@@ -35,6 +39,8 @@ CMD-wled_device-SET_PRESET-NAME = Load Preset
 CMD-wled_device-SET_COLOR-NAME = Set Color
 CMD-wled_device-SET_SPEED-NAME = Set Speed
 CMD-wled_device-SET_INTENSITY-NAME = Set Intensity
+CMD-wled_device-SET_TRANSITION-NAME = Set Transition
+CMD-wled_device-SET_LIVE-NAME = Live Override
 CMD-wled_device-QUERY-NAME = Query
 
 # WLED Segment Node

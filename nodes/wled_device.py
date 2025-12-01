@@ -28,6 +28,10 @@ class WLEDDevice(udi_interface.Node):
         GV5 (Green): Green component 0-255
         GV6 (Blue): Blue component 0-255
         GV7 (Online): Connection status
+        GV8 (Speed): Effect speed 0-100%
+        GV9 (Intensity): Effect intensity 0-100%
+        GV10 (Transition): Transition time in 100ms units
+        GV11 (Live): Live/UDP override active
     """
     
     id = 'wled_device'
@@ -43,6 +47,10 @@ class WLEDDevice(udi_interface.Node):
         {'driver': 'GV5', 'value': 0, 'uom': 56},    # Green
         {'driver': 'GV6', 'value': 0, 'uom': 56},    # Blue
         {'driver': 'GV7', 'value': 0, 'uom': 2},     # Online
+        {'driver': 'GV8', 'value': 50, 'uom': 51},   # Speed (%)
+        {'driver': 'GV9', 'value': 50, 'uom': 51},   # Intensity (%)
+        {'driver': 'GV10', 'value': 7, 'uom': 56},   # Transition (100ms units)
+        {'driver': 'GV11', 'value': 0, 'uom': 2},    # Live override
     ]
     
     def __init__(self, polyglot, primary, address, name, ip: str, port: int = 80, wled_api=None):
@@ -152,7 +160,21 @@ class WLEDDevice(udi_interface.Node):
                     self.setDriver('GV5', color[1])  # Green
                     self.setDriver('GV6', color[2])  # Blue
                 
-                LOGGER.debug(f"{self.name}: Power={state.on}, Brightness={brightness_pct}%, Effect={state.effect}")
+                # Update speed (from main segment)
+                if state.segments and len(state.segments) > 0:
+                    seg = state.segments[state.main_segment] if state.main_segment < len(state.segments) else state.segments[0]
+                    speed_pct = int((seg.speed / 255) * 100)
+                    intensity_pct = int((seg.intensity / 255) * 100)
+                    self.setDriver('GV8', speed_pct)
+                    self.setDriver('GV9', intensity_pct)
+                
+                # Update transition time
+                self.setDriver('GV10', state.transition)
+                
+                # Update live override status
+                self.setDriver('GV11', 1 if state.live else 0)
+                
+                LOGGER.debug(f"{self.name}: Power={state.on}, Brightness={brightness_pct}%, Effect={state.effect}, Speed={speed_pct}%")
             
         except Exception as e:
             LOGGER.error(f"Failed to update status for {self.name}: {e}")
@@ -299,6 +321,26 @@ class WLEDDevice(udi_interface.Node):
                 self._device.set_effect(self._device.state.effect, intensity=intensity_val)
             self.update_status()
     
+    def cmd_set_transition(self, command):
+        """Set transition time (in 100ms units, 0-255)"""
+        transition = int(command.get('value', 7))
+        LOGGER.info(f"Set Transition: {self.name} to {transition} (= {transition * 100}ms)")
+        
+        if self._device:
+            self._device.set_state(transition=transition)
+            self.update_status()
+    
+    def cmd_set_live(self, command):
+        """Enable/disable live override (external control like Hyperion)"""
+        value = int(command.get('value', 0))
+        live = value > 0
+        LOGGER.info(f"Set Live Override: {self.name} to {live}")
+        
+        if self._device:
+            # lor = live override (0 = off, 1 = until live off, 2 = until reboot)
+            self._device.set_state(lor=1 if live else 0)
+            self.update_status()
+    
     # Command handlers
     commands = {
         'DON': cmd_on,
@@ -314,5 +356,7 @@ class WLEDDevice(udi_interface.Node):
         'SET_COLOR': cmd_set_color,
         'SET_SPEED': cmd_set_speed,
         'SET_INTENSITY': cmd_set_intensity,
+        'SET_TRANSITION': cmd_set_transition,
+        'SET_LIVE': cmd_set_live,
         'QUERY': query,
     }

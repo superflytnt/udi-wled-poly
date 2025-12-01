@@ -1,6 +1,6 @@
 # WLED Polyglot v3 NodeServer
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full control of WLED LED controllers.
@@ -86,8 +86,10 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 | Set Palette | Select from 70+ palettes |
 | Set Color | Set RGB color |
 | Load Preset | Load a saved preset |
-| Set Speed | Effect animation speed |
-| Set Intensity | Effect intensity |
+| Set Speed | Effect animation speed (0-100%) |
+| Set Intensity | Effect intensity/size (0-100%) |
+| Set Transition | Fade time in 100ms units (0-255) |
+| Live Override | Enable/disable external UDP control |
 
 ## Status Values
 
@@ -100,6 +102,10 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 | GV3 | Current Preset |
 | GV4-GV6 | RGB Color values |
 | GV7 | Online status |
+| GV8 | Speed (0-100%) |
+| GV9 | Intensity (0-100%) |
+| GV10 | Transition (100ms units) |
+| GV11 | Live Override active |
 
 ## Troubleshooting
 
@@ -120,7 +126,15 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 
 ## Version History
 
-### v1.1.0 (2024-12-01)
+### v1.2.0 (2025-12-01)
+- Added Speed control (effect animation speed)
+- Added Intensity control (effect size/intensity)
+- Added Transition Time control (fade duration)
+- Added Live Override control (enable/disable external UDP control)
+- New status displays: Speed, Intensity, Transition, Live Override
+- Real-time segment data display
+
+### v1.1.0 (2025-12-01)
 - Added effect metadata (1D/2D, Palette, Volume, Frequency indicators)
 - Added parallel auto-discovery (scans network in ~5 seconds)
 - Added Rebuild Presets command
@@ -128,7 +142,7 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 - Better configuration documentation
 - Fixed Discover button in PG3
 
-### v1.0.0 (2024-12-01)
+### v1.0.0 (2025-12-01)
 - Initial release
 - Basic WLED control (power, brightness, effects, palettes, presets, color)
 - Auto-discovery and manual configuration
