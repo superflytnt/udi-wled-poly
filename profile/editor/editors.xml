@@ -2,7 +2,7 @@
 <editors>
     <!-- Boolean On/Off -->
     <editor id="bool">
-        <range uom="2" subset="0-1" nls="bool" />
+        <range uom="2" subset="0-1" nls="BOOL" />
     </editor>
     
     <!-- Percentage 0-100 -->
@@ -22,17 +22,17 @@
     
     <!-- Effect selector - WLED effects (extended range for newer versions) -->
     <editor id="effect">
-        <range uom="25" subset="0-187" nls="effect" />
+        <range uom="25" subset="0-187" nls="EFFECT" />
     </editor>
     
     <!-- Palette selector - WLED palettes (extended range) -->
     <editor id="palette">
-        <range uom="25" subset="0-71" nls="palette" />
+        <range uom="25" subset="0-71" nls="PALETTE" />
     </editor>
     
     <!-- Preset selector 0-255 (0 = none, 1-250 = presets) -->
     <editor id="preset">
-        <range uom="25" subset="0-250" nls="preset" />
+        <range uom="25" subset="0-250" nls="PRESET" />
     </editor>
 </editors>
 
