@@ -83,6 +83,11 @@ class Controller(udi_interface.Node):
         LOGGER.info("Running auto-discovery for WLED devices...")
         self.discover()
         
+        # Rebuild presets from all devices
+        if self._devices:
+            LOGGER.info("Building preset list from devices...")
+            self.rebuild_presets()
+        
         LOGGER.info("WLED Controller started successfully")
     
     def _load_config(self):
@@ -298,9 +303,93 @@ class Controller(udi_interface.Node):
         except Exception as e:
             LOGGER.error(f"Discovery failed: {e}")
     
+    def rebuild_presets(self, command=None):
+        """
+        Rebuild presets from all WLED devices.
+        
+        Fetches presets from each device and updates the NLS file
+        with preset names for better ISY display.
+        """
+        LOGGER.info("Rebuilding presets from all WLED devices...")
+        
+        all_presets = {}
+        
+        # Collect presets from all devices
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and hasattr(node, '_device') and node._device:
+                try:
+                    presets = node._device.get_presets()
+                    if presets:
+                        LOGGER.info(f"Device {address}: Found {len(presets)} presets")
+                        # Merge presets (using highest ID as unique)
+                        for preset_id, preset_name in presets.items():
+                            if preset_id not in all_presets:
+                                all_presets[preset_id] = preset_name
+                except Exception as e:
+                    LOGGER.warning(f"Failed to get presets from {address}: {e}")
+        
+        if all_presets:
+            LOGGER.info(f"Total unique presets found: {len(all_presets)}")
+            self._update_preset_nls(all_presets)
+            
+            # Store presets for each device node
+            for address, device_info in self._devices.items():
+                node = device_info.get('node')
+                if node:
+                    node._available_presets = all_presets
+        else:
+            LOGGER.warning("No presets found on any device")
+    
+    def _update_preset_nls(self, presets: Dict[int, str]):
+        """
+        Update NLS file with preset names.
+        
+        Args:
+            presets: Dict mapping preset ID to preset name
+        """
+        import os
+        
+        try:
+            # Get the profile directory
+            profile_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'profile', 'nls')
+            nls_file = os.path.join(profile_dir, 'en_us.txt')
+            
+            # Read existing NLS content
+            existing_lines = []
+            if os.path.exists(nls_file):
+                with open(nls_file, 'r') as f:
+                    existing_lines = f.readlines()
+            
+            # Remove old preset entries
+            filtered_lines = [line for line in existing_lines if not line.startswith('PRESET_')]
+            
+            # Add new preset entries
+            preset_lines = ["\n# WLED Presets (auto-generated)\n"]
+            for preset_id in sorted(presets.keys()):
+                preset_name = presets[preset_id]
+                # Sanitize preset name for NLS
+                safe_name = preset_name.replace('"', "'").replace('\n', ' ')
+                preset_lines.append(f"PRESET_{preset_id} = {safe_name}\n")
+            
+            # Write updated NLS file
+            with open(nls_file, 'w') as f:
+                f.writelines(filtered_lines)
+                f.writelines(preset_lines)
+            
+            LOGGER.info(f"Updated NLS file with {len(presets)} preset names")
+            
+            # Reload profile to apply changes
+            LOGGER.info("Reloading profile to apply preset changes...")
+            self.poly.updateProfile()
+            
+        except Exception as e:
+            LOGGER.error(f"Failed to update preset NLS: {e}")
+    
     # Command handlers
     commands = {
         'DISCOVER': discover,
         'QUERY': query,
+        'REBUILD_PRESETS': rebuild_presets,
     }
 

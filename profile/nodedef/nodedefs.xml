@@ -10,6 +10,7 @@
             <sends />
             <accepts>
                 <cmd id="DISCOVER" />
+                <cmd id="REBUILD_PRESETS" />
                 <cmd id="QUERY" />
             </accepts>
         </cmds>

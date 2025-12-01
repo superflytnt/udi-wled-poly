@@ -73,19 +73,34 @@ class WLEDDevice(udi_interface.Node):
         self._wled_api = wled_api
         self._device = None
         
+        # Presets cache
+        self._available_presets = {}
+        
         # Initialize device connection
         self._init_device()
         
         # Add node to polyglot
         polyglot.addNode(self)
         
-        # Initial status update
+        # Initial status update and preset fetch
         self.update_status(full_sync=True)
+        self._fetch_presets()
     
     def _init_device(self):
         """Initialize WLED device connection"""
         from lib.wled_api import WLEDDevice as WLEDApiDevice
         self._device = WLEDApiDevice(self._ip, self._port)
+    
+    def _fetch_presets(self):
+        """Fetch available presets from device"""
+        if self._device:
+            try:
+                presets = self._device.get_presets()
+                if presets:
+                    self._available_presets = presets
+                    LOGGER.info(f"{self.name}: Loaded {len(presets)} presets")
+            except Exception as e:
+                LOGGER.warning(f"{self.name}: Failed to fetch presets - {e}")
     
     def update_status(self, full_sync: bool = False):
         """

@@ -7,6 +7,7 @@ ND-controller-ICON = GenericCtl
 ST-controller-ST-NAME = Status
 ST-controller-GV0-NAME = Device Count
 CMD-controller-DISCOVER-NAME = Discover Devices
+CMD-controller-REBUILD_PRESETS-NAME = Rebuild Presets
 CMD-controller-QUERY-NAME = Query
 
 # WLED Device Node

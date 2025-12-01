@@ -398,6 +398,32 @@ class WLEDDevice:
         LOGGER.info(f"WLED {self.host}: Loading preset {preset_id}")
         return self.set_state(ps=preset_id)
     
+    def get_presets(self) -> Dict[int, str]:
+        """
+        Fetch presets from device.
+        
+        Returns:
+            Dict mapping preset ID to preset name
+        """
+        try:
+            response = requests.get(f"{self._base_url}/presets.json", timeout=self.timeout)
+            if response.status_code == 200:
+                data = response.json()
+                presets = {}
+                for key, value in data.items():
+                    if isinstance(value, dict) and 'n' in value:
+                        try:
+                            preset_id = int(key)
+                            presets[preset_id] = value['n']
+                        except (ValueError, TypeError):
+                            pass
+                self._presets = presets
+                LOGGER.info(f"WLED {self.host}: Found {len(presets)} presets")
+                return presets
+        except Exception as e:
+            LOGGER.warning(f"WLED {self.host}: Failed to get presets - {e}")
+        return {}
+    
     def set_segment_state(self, segment_id: int, **kwargs) -> bool:
         """
         Set state for a specific segment.
