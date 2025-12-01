@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodeDefs>
+    <!-- Controller Node - Manages all WLED devices -->
+    <nodeDef id="controller" nls="controller">
+        <sts>
+            <st id="ST" editor="bool" />
+            <st id="GV0" editor="raw_count" />
+        </sts>
+        <cmds>
+            <sends />
+            <accepts>
+                <cmd id="DISCOVER" />
+                <cmd id="QUERY" />
+            </accepts>
+        </cmds>
+    </nodeDef>
+    
+    <!-- WLED Device Node - Individual WLED controller -->
+    <nodeDef id="wled_device" nls="wled_device">
+        <sts>
+            <st id="ST" editor="bool" />
+            <st id="GV0" editor="percent" />
+            <st id="GV1" editor="effect" />
+            <st id="GV2" editor="palette" />
+            <st id="GV3" editor="preset" />
+            <st id="GV4" editor="raw_byte" />
+            <st id="GV5" editor="raw_byte" />
+            <st id="GV6" editor="raw_byte" />
+            <st id="GV7" editor="bool" />
+        </sts>
+        <cmds>
+            <sends />
+            <accepts>
+                <cmd id="DON">
+                    <p id="" editor="percent" optional="true" />
+                </cmd>
+                <cmd id="DOF" />
+                <cmd id="DFON" />
+                <cmd id="DFOF" />
+                <cmd id="BRT" />
+                <cmd id="DIM" />
+                <cmd id="SET_BRI">
+                    <p id="" editor="percent" />
+                </cmd>
+                <cmd id="SET_EFFECT">
+                    <p id="" editor="effect" />
+                </cmd>
+                <cmd id="SET_PALETTE">
+                    <p id="" editor="palette" />
+                </cmd>
+                <cmd id="SET_PRESET">
+                    <p id="" editor="preset" />
+                </cmd>
+                <cmd id="SET_COLOR">
+                    <p id="R" editor="raw_byte" />
+                    <p id="G" editor="raw_byte" />
+                    <p id="B" editor="raw_byte" />
+                </cmd>
+                <cmd id="SET_SPEED">
+                    <p id="" editor="percent" />
+                </cmd>
+                <cmd id="SET_INTENSITY">
+                    <p id="" editor="percent" />
+                </cmd>
+                <cmd id="QUERY" />
+            </accepts>
+        </cmds>
+    </nodeDef>
+    
+    <!-- WLED Segment Node - Individual segment control -->
+    <nodeDef id="wled_segment" nls="wled_segment">
+        <sts>
+            <st id="ST" editor="bool" />
+            <st id="GV0" editor="percent" />
+            <st id="GV1" editor="effect" />
+            <st id="GV2" editor="palette" />
+            <st id="GV3" editor="raw_byte" />
+            <st id="GV4" editor="raw_byte" />
+            <st id="GV5" editor="raw_byte" />
+            <st id="GV6" editor="raw_count" />
+            <st id="GV7" editor="raw_count" />
+        </sts>
+        <cmds>
+            <sends />
+            <accepts>
+                <cmd id="DON">
+                    <p id="" editor="percent" optional="true" />
+                </cmd>
+                <cmd id="DOF" />
+                <cmd id="SET_BRI">
+                    <p id="" editor="percent" />
+                </cmd>
+                <cmd id="SET_EFFECT">
+                    <p id="" editor="effect" />
+                </cmd>
+                <cmd id="SET_PALETTE">
+                    <p id="" editor="palette" />
+                </cmd>
+                <cmd id="SET_COLOR">
+                    <p id="R" editor="raw_byte" />
+                    <p id="G" editor="raw_byte" />
+                    <p id="B" editor="raw_byte" />
+                </cmd>
+                <cmd id="QUERY" />
+            </accepts>
+        </cmds>
+    </nodeDef>
+</nodeDefs>
+

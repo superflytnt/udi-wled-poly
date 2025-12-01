@@ -1,0 +1,18 @@
+{
+  "name": "WLED",
+  "shortPoll": 30,
+  "longPoll": 120,
+  "type": "python3",
+  "executable": "wled_poly.py",
+  "credits": [
+    {
+      "title": "WLED Polyglot NodeServer",
+      "author": "Seth Kaplan",
+      "version": "1.0.0",
+      "date": "2024-12-01"
+    }
+  ],
+  "docs": "https://github.com/sethkaplan/udi-wled-poly",
+  "logLevel": "INFO"
+}
+
