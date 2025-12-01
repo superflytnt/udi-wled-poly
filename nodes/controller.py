@@ -121,7 +121,7 @@ class Controller(udi_interface.Node):
         """Set configuration documentation - displays in PG3 Configuration tab"""
         html = '''
 <h2>WLED Polyglot v3 NodeServer</h2>
-<p style="color: #888;">Version 1.2.0</p>
+<p style="color: #888;">Version 1.3.0</p>
 
 <br>
 

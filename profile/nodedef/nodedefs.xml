@@ -32,6 +32,10 @@
             <st id="GV9" editor="percent" />
             <st id="GV10" editor="raw_byte" />
             <st id="GV11" editor="bool" />
+            <st id="GV12" editor="bool" />
+            <st id="GV13" editor="raw_byte" />
+            <st id="GV14" editor="bool" />
+            <st id="GV15" editor="bool" />
         </sts>
         <cmds>
             <sends />
@@ -56,6 +60,9 @@
                 <cmd id="SET_PRESET">
                     <p id="" editor="preset" />
                 </cmd>
+                <cmd id="SAVE_PRESET">
+                    <p id="" editor="preset" />
+                </cmd>
                 <cmd id="SET_COLOR">
                     <p id="R" editor="raw_byte" />
                     <p id="G" editor="raw_byte" />
@@ -73,6 +80,23 @@
                 <cmd id="SET_LIVE">
                     <p id="" editor="bool" />
                 </cmd>
+                <cmd id="NIGHTLIGHT_ON">
+                    <p id="" editor="raw_byte" optional="true" />
+                </cmd>
+                <cmd id="NIGHTLIGHT_OFF" />
+                <cmd id="SET_NIGHTLIGHT">
+                    <p id="" editor="raw_byte" />
+                </cmd>
+                <cmd id="SYNC_SEND">
+                    <p id="" editor="bool" />
+                </cmd>
+                <cmd id="SYNC_RECEIVE">
+                    <p id="" editor="bool" />
+                </cmd>
+                <cmd id="PLAYLIST_ON">
+                    <p id="" editor="raw_byte" optional="true" />
+                </cmd>
+                <cmd id="PLAYLIST_OFF" />
                 <cmd id="QUERY" />
             </accepts>
         </cmds>

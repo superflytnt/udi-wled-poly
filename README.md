@@ -1,6 +1,6 @@
 # WLED Polyglot v3 NodeServer
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full control of WLED LED controllers.
@@ -125,6 +125,14 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 - Restart ISY Admin Console
 
 ## Version History
+
+### v1.3.0 (2025-12-01)
+- Added Save Preset command (save current state to a preset slot)
+- Added Playlist controls (Start/Stop playlist)
+- Added Nightlight mode (auto-dim timer with duration control)
+- Added Sync Send/Receive controls (UDP sync between devices)
+- New status displays: Nightlight, Nightlight Duration, Sync Send, Sync Receive
+- Preset loading now updates all status values (effect, speed, intensity, etc.)
 
 ### v1.2.0 (2025-12-01)
 - Added Speed control (effect animation speed)

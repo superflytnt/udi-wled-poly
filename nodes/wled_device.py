@@ -51,6 +51,10 @@ class WLEDDevice(udi_interface.Node):
         {'driver': 'GV9', 'value': 50, 'uom': 51},   # Intensity (%)
         {'driver': 'GV10', 'value': 7, 'uom': 56},   # Transition (100ms units)
         {'driver': 'GV11', 'value': 0, 'uom': 2},    # Live override
+        {'driver': 'GV12', 'value': 0, 'uom': 2},    # Nightlight active
+        {'driver': 'GV13', 'value': 60, 'uom': 56},  # Nightlight duration (minutes)
+        {'driver': 'GV14', 'value': 0, 'uom': 2},    # Sync Send
+        {'driver': 'GV15', 'value': 1, 'uom': 2},    # Sync Receive
     ]
     
     def __init__(self, polyglot, primary, address, name, ip: str, port: int = 80, wled_api=None):
@@ -174,6 +178,14 @@ class WLEDDevice(udi_interface.Node):
                 # Update live override status
                 self.setDriver('GV11', 1 if state.live else 0)
                 
+                # Update nightlight status
+                self.setDriver('GV12', 1 if state.nightlight_on else 0)
+                self.setDriver('GV13', state.nightlight_duration)
+                
+                # Update sync settings
+                self.setDriver('GV14', 1 if state.sync_send else 0)
+                self.setDriver('GV15', 1 if state.sync_receive else 0)
+                
                 LOGGER.debug(f"{self.name}: Power={state.on}, Brightness={brightness_pct}%, Effect={state.effect}, Speed={speed_pct}%")
             
         except Exception as e:
@@ -277,13 +289,16 @@ class WLEDDevice(udi_interface.Node):
             self.update_status()
     
     def cmd_set_preset(self, command):
-        """Load a preset"""
+        """Load a preset - updates all status values after loading"""
+        import time
         preset_id = int(command.get('value', 1))
         LOGGER.info(f"Load Preset: {self.name} preset {preset_id}")
         
         if self._device:
             self._device.set_preset(preset_id)
-            self.update_status()
+            # Wait for WLED to apply the preset before reading status
+            time.sleep(0.3)
+            self.update_status(full_sync=True)  # Full sync to get all values
     
     def cmd_set_color(self, command):
         """Set RGB color"""
@@ -341,6 +356,81 @@ class WLEDDevice(udi_interface.Node):
             self._device.set_state(lor=1 if live else 0)
             self.update_status()
     
+    def cmd_nightlight_on(self, command):
+        """Enable nightlight mode - gradually dims to target brightness"""
+        duration = int(command.get('value', 60)) if command and 'value' in command else 60
+        LOGGER.info(f"Nightlight On: {self.name} for {duration} minutes")
+        
+        if self._device:
+            # nl = nightlight settings
+            self._device.set_state(nl={"on": True, "dur": duration, "mode": 1, "tbri": 0})
+            self.update_status()
+    
+    def cmd_nightlight_off(self, command):
+        """Disable nightlight mode"""
+        LOGGER.info(f"Nightlight Off: {self.name}")
+        
+        if self._device:
+            self._device.set_state(nl={"on": False})
+            self.update_status()
+    
+    def cmd_set_nightlight(self, command):
+        """Set nightlight duration (minutes)"""
+        duration = int(command.get('value', 60))
+        LOGGER.info(f"Set Nightlight Duration: {self.name} to {duration} minutes")
+        
+        if self._device:
+            self._device.set_state(nl={"dur": duration})
+            self.update_status()
+    
+    def cmd_sync_send(self, command):
+        """Enable/disable UDP sync send"""
+        value = int(command.get('value', 0))
+        send = value > 0
+        LOGGER.info(f"Set Sync Send: {self.name} to {send}")
+        
+        if self._device:
+            self._device.set_state(udpn={"send": send})
+            self.update_status()
+    
+    def cmd_sync_receive(self, command):
+        """Enable/disable UDP sync receive"""
+        value = int(command.get('value', 0))
+        recv = value > 0
+        LOGGER.info(f"Set Sync Receive: {self.name} to {recv}")
+        
+        if self._device:
+            self._device.set_state(udpn={"recv": recv})
+            self.update_status()
+    
+    def cmd_save_preset(self, command):
+        """Save current state to a preset slot"""
+        preset_id = int(command.get('value', 1))
+        LOGGER.info(f"Save Preset: {self.name} to slot {preset_id}")
+        
+        if self._device:
+            # psave = preset save (ID to save to)
+            # The preset will be saved with current state
+            self._device.set_state(psave=preset_id)
+            self.update_status()
+    
+    def cmd_playlist_on(self, command):
+        """Start a playlist"""
+        playlist_id = int(command.get('value', 0)) if command and 'value' in command else 0
+        LOGGER.info(f"Start Playlist: {self.name} playlist {playlist_id}")
+        
+        if self._device:
+            self._device.set_state(pl=playlist_id)
+            self.update_status()
+    
+    def cmd_playlist_off(self, command):
+        """Stop playlist"""
+        LOGGER.info(f"Stop Playlist: {self.name}")
+        
+        if self._device:
+            self._device.set_state(pl=-1)
+            self.update_status()
+    
     # Command handlers
     commands = {
         'DON': cmd_on,
@@ -353,10 +443,18 @@ class WLEDDevice(udi_interface.Node):
         'SET_EFFECT': cmd_set_effect,
         'SET_PALETTE': cmd_set_palette,
         'SET_PRESET': cmd_set_preset,
+        'SAVE_PRESET': cmd_save_preset,
         'SET_COLOR': cmd_set_color,
         'SET_SPEED': cmd_set_speed,
         'SET_INTENSITY': cmd_set_intensity,
         'SET_TRANSITION': cmd_set_transition,
         'SET_LIVE': cmd_set_live,
+        'NIGHTLIGHT_ON': cmd_nightlight_on,
+        'NIGHTLIGHT_OFF': cmd_nightlight_off,
+        'SET_NIGHTLIGHT': cmd_set_nightlight,
+        'SYNC_SEND': cmd_sync_send,
+        'SYNC_RECEIVE': cmd_sync_receive,
+        'PLAYLIST_ON': cmd_playlist_on,
+        'PLAYLIST_OFF': cmd_playlist_off,
         'QUERY': query,
     }
