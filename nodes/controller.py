@@ -121,6 +121,7 @@ class Controller(udi_interface.Node):
         """Set configuration documentation - displays in PG3 Configuration tab"""
         html = '''
 <h2>WLED Polyglot v3 NodeServer</h2>
+<p style="color: #888;">Version 1.1.0</p>
 
 <br>
 
@@ -151,12 +152,28 @@ class Controller(udi_interface.Node):
 
 <br>
 
-<p>
-<a href="https://github.com/superflytnt/udi-wled-poly" target="_blank">GitHub</a> · 
-<a href="https://github.com/superflytnt/udi-wled-poly#readme" target="_blank">Docs</a> · 
-<a href="https://github.com/superflytnt/udi-wled-poly/issues" target="_blank">Report Issue</a> · 
-<a href="https://kno.wled.ge/" target="_blank">WLED Docs</a>
-</p>
+<table cellpadding="5">
+  <tr>
+    <td><a href="https://github.com/superflytnt/udi-wled-poly" target="_blank">Source Code</a></td>
+    <td style="color: #666;">—</td>
+    <td>View and contribute on GitHub</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/superflytnt/udi-wled-poly#readme" target="_blank">Documentation</a></td>
+    <td style="color: #666;">—</td>
+    <td>Setup guide and command reference</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/superflytnt/udi-wled-poly/issues" target="_blank">Report Issue</a></td>
+    <td style="color: #666;">—</td>
+    <td>Bug reports and feature requests</td>
+  </tr>
+  <tr>
+    <td><a href="https://kno.wled.ge/" target="_blank">WLED Docs</a></td>
+    <td style="color: #666;">—</td>
+    <td>Official WLED documentation</td>
+  </tr>
+</table>
 '''
         self.poly.setCustomParamsDoc(html)
     

@@ -1,128 +1,152 @@
-# WLED Polyglot NodeServer
+# WLED Polyglot v3 NodeServer
 
-A Polyglot v3 (PG3) NodeServer for Universal Devices ISY that provides full control of WLED LED controllers.
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full control of WLED LED controllers.
 
 ## Features
 
-- **Multi-device support** - Control multiple WLED devices from a single nodeserver
-- **Automatic Discovery** - Find WLED devices on your network via mDNS
-- **Manual Configuration** - Add devices by IP address
-- **Full WLED Control**:
-  - On/Off/Toggle
-  - Brightness (0-255)
-  - RGB Color control
-  - Effect selection (100+ effects)
-  - Palette selection (50+ palettes)
-  - Preset management
-  - Segment control
-  - Sync settings
+### Device Management
+- **Multi-device support** — Control unlimited WLED devices from a single nodeserver
+- **Auto-Discovery** — Parallel network scan finds all WLED devices in seconds
+- **Manual Configuration** — Add devices by name and IP address
+- **Real-time Status** — See power, brightness, effect, palette, and preset status
+
+### WLED Control
+| Feature | Description |
+|---------|-------------|
+| Power | On/Off/Toggle with optional brightness |
+| Brightness | 0-100% dimming |
+| Effects | 180+ effects with type indicators (1D/2D, Palette, Audio) |
+| Palettes | 70+ color palettes |
+| Presets | Load saved presets (names auto-populated from devices) |
+| Color | RGB color control |
+| Speed | Effect animation speed |
+| Intensity | Effect intensity/size |
+
+### ISY Integration
+- Full status display in ISY Admin Console and eisy-ui
+- Works with ISY programs, scenes, and schedules
+- Effect/Palette/Preset dropdowns show names, not just numbers
 
 ## Requirements
 
 - Polyglot v3 (PG3) running on Polisy or eISY
-- One or more WLED controllers on your network
-- Python 3.9+
+- One or more WLED controllers (v0.13+)
+- WLED devices accessible on local network (port 80)
 
 ## Installation
 
-### From PG3 Store (Recommended)
-1. Open the PG3 dashboard
-2. Navigate to NodeServer Store
-3. Search for "WLED"
-4. Click Install
+### From Local (Developer Mode)
+1. SSH to your eISY/Polisy
+2. Clone repository:
+   ```bash
+   git clone https://github.com/superflytnt/udi-wled-poly /home/admin/WLED-Improved
+   ```
+3. In PG3, add as Local plugin pointing to `/home/admin/WLED-Improved`
 
 ### Manual Installation
 1. Clone this repository to your PG3 nodeserver directory
 2. Run `./install.sh` to install dependencies
-3. Restart the nodeserver
+3. Add as Local plugin in PG3
 
 ## Configuration
 
-### Adding Devices
+### Auto-Discovery (Recommended)
+1. Click the **Discover** button in PG3
+2. All WLED devices on your network will be found and added automatically
 
-**Automatic Discovery:**
-1. Click "Discover" on the controller node
-2. All WLED devices on your network will be detected and added
+### Manual Configuration
+Add a Custom Parameter in PG3 Configuration:
 
-**Manual Addition:**
-1. In the nodeserver configuration, add devices in the format:
-   ```
-   name1:192.168.1.100,name2:192.168.1.101
-   ```
+| Key | Value |
+|-----|-------|
+| `devices` | `arcade:192.168.1.112,bar:192.168.1.185,kitchen:192.168.1.99` |
 
-### Configuration Parameters
+Format: `name1:ip1,name2:ip2,name3:ip3`
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `shortPoll` | Status update interval (seconds) | 30 |
-| `longPoll` | Full device sync interval (seconds) | 120 |
-| `devices` | Manual device list (name:ip pairs) | empty |
+## Node Commands
 
-## Node Types
+### Controller Node
+| Command | Description |
+|---------|-------------|
+| Discover | Scan network for WLED devices |
+| Rebuild Presets | Refresh preset/effect names from devices |
+| Query | Update all device status |
 
-### Controller
-The main controller node manages device discovery and configuration.
+### WLED Device Node
+| Command | Description |
+|---------|-------------|
+| On | Turn on (optionally with brightness %) |
+| Off | Turn off |
+| Fast On/Off | Instant on/off (no transition) |
+| Set Brightness | Set brightness 0-100% |
+| Set Effect | Select from 180+ effects |
+| Set Palette | Select from 70+ palettes |
+| Set Color | Set RGB color |
+| Load Preset | Load a saved preset |
+| Set Speed | Effect animation speed |
+| Set Intensity | Effect intensity |
 
-**Commands:**
-- Discover - Scan network for WLED devices
-- Query - Refresh all device status
+## Status Values
 
-### WLED Device
-Each WLED controller appears as a device node.
-
-**Status:**
-- Power (On/Off)
-- Brightness (0-100%)
-- Effect (current effect name)
-- Palette (current palette name)
-- Preset (current preset number)
-- Online (connection status)
-
-**Commands:**
-- On / Off / Toggle
-- Set Brightness
-- Set Effect
-- Set Palette
-- Set Color (RGB)
-- Load Preset
-
-### Segment (Optional)
-Individual LED segments can be controlled separately.
-
-**Status:**
-- Power, Brightness, Effect, Color
-
-**Commands:**
-- On/Off, Set Brightness, Set Effect, Set Color
-
-## WLED API
-
-This nodeserver uses the WLED JSON API for full feature support:
-- `GET /json` - Get current state
-- `POST /json/state` - Set state
-- `GET /json/info` - Device information
-- `GET /json/effects` - Available effects
-- `GET /json/palettes` - Available palettes
+| Status | Description |
+|--------|-------------|
+| ST | Power (On/Off) |
+| GV0 | Brightness (0-100%) |
+| GV1 | Current Effect |
+| GV2 | Current Palette |
+| GV3 | Current Preset |
+| GV4-GV6 | RGB Color values |
+| GV7 | Online status |
 
 ## Troubleshooting
 
-### Device Not Responding
-1. Verify WLED device is accessible at its IP address
-2. Check that WLED firmware is up to date
-3. Ensure no firewall is blocking port 80
+### Device Not Found During Discovery
+- Ensure WLED device is powered on and connected to network
+- Check that eISY/Polisy is on the same subnet as WLED devices
+- Try adding device manually with IP address
 
-### Discovery Not Finding Devices
-1. Ensure WLED devices have mDNS enabled
-2. Check that devices are on the same network/VLAN
-3. Try manual IP configuration
+### Commands Not Working
+- Check WLED web interface is accessible at `http://<device-ip>`
+- Verify WLED firmware is v0.13 or newer
+- Check PG3 logs for error messages
+
+### Effects/Presets Showing Numbers Only
+- Click "Rebuild Presets" on the controller node
+- Click "Load Profile" in PG3
+- Restart ISY Admin Console
+
+## Version History
+
+### v1.1.0 (2024-12-01)
+- Added effect metadata (1D/2D, Palette, Volume, Frequency indicators)
+- Added parallel auto-discovery (scans network in ~5 seconds)
+- Added Rebuild Presets command
+- Improved notices with discovery results
+- Better configuration documentation
+- Fixed Discover button in PG3
+
+### v1.0.0 (2024-12-01)
+- Initial release
+- Basic WLED control (power, brightness, effects, palettes, presets, color)
+- Auto-discovery and manual configuration
+- Multi-device support
+
+## Links
+
+- **Source Code:** https://github.com/superflytnt/udi-wled-poly
+- **Report Issues:** https://github.com/superflytnt/udi-wled-poly/issues
+- **WLED Project:** https://kno.wled.ge/
+- **Universal Devices:** https://www.universal-devices.com/
 
 ## License
 
-MIT License - See LICENSE file
+MIT License — See [LICENSE](LICENSE) file
 
 ## Credits
 
-- WLED Project: https://kno.wled.ge/
-- Universal Devices: https://www.universal-devices.com/
-- Polyglot v3: https://github.com/UniversalDevicesInc-PG3
-
+- **WLED Project** — https://kno.wled.ge/
+- **Universal Devices** — https://www.universal-devices.com/
+- **udi-interface** — Python interface for Polyglot v3
