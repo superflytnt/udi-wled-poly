@@ -80,6 +80,10 @@ class Controller(udi_interface.Node):
         # Load configuration and add configured devices
         self._load_config()
         
+        # Auto-discover WLED devices on startup
+        LOGGER.info("Running auto-discovery for WLED devices...")
+        self.discover()
+        
         LOGGER.info("WLED Controller started successfully")
     
     def _load_config(self):
