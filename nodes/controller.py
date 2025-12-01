@@ -60,6 +60,7 @@ class Controller(udi_interface.Node):
         polyglot.subscribe(polyglot.STOP, self.stop)
         polyglot.subscribe(polyglot.CUSTOMPARAMS, self.parameter_handler)
         polyglot.subscribe(polyglot.ADDNODEDONE, self.node_added)
+        polyglot.subscribe(polyglot.DISCOVER, self.discover)  # Handle Discover button in PG3
         
         # Set ready flag
         polyglot.ready()
@@ -393,6 +394,102 @@ Value: arcade:192.168.1.112,bar:192.168.1.185,kitchen:192.168.1.99</pre>
                     node._available_presets = all_presets
         else:
             LOGGER.warning("No presets found on any device")
+        
+        # Also rebuild effects with metadata
+        self._rebuild_effects_nls()
+    
+    def _rebuild_effects_nls(self):
+        """
+        Rebuild effects NLS with metadata (1D/2D, palette, volume, frequency).
+        
+        Fetches effect metadata from the first available device and updates
+        the NLS file with effect types.
+        """
+        LOGGER.info("Rebuilding effects with metadata...")
+        
+        # Get metadata from first available device
+        effect_metadata = None
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and hasattr(node, '_device') and node._device:
+                try:
+                    effect_metadata = node._device.get_effect_metadata()
+                    if effect_metadata:
+                        LOGGER.info(f"Got effect metadata from {address}")
+                        break
+                except Exception as e:
+                    LOGGER.warning(f"Failed to get effect metadata from {address}: {e}")
+        
+        if not effect_metadata:
+            LOGGER.warning("Could not get effect metadata from any device")
+            return
+        
+        self._update_effect_nls(effect_metadata)
+    
+    def _update_effect_nls(self, effect_metadata: Dict[int, Dict]):
+        """
+        Update NLS file with effect names and metadata flags.
+        
+        Args:
+            effect_metadata: Dict mapping effect ID to metadata dict
+        """
+        import os
+        
+        try:
+            profile_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'profile', 'nls')
+            nls_file = os.path.join(profile_dir, 'en_us.txt')
+            
+            # Read existing NLS content
+            existing_lines = []
+            if os.path.exists(nls_file):
+                with open(nls_file, 'r') as f:
+                    existing_lines = f.readlines()
+            
+            # Remove old effect entries (keep only non-EFFECT lines)
+            filtered_lines = [line for line in existing_lines 
+                             if not line.startswith('EFFECT-')]
+            # Also remove the effect header
+            filtered_lines = [line for line in filtered_lines 
+                             if 'Effect Names' not in line and 'WLED effects' not in line]
+            
+            # Build new effect entries with metadata
+            effect_lines = ["\n# Effect Names (WLED effects with type indicators)\n"]
+            for effect_id in sorted(effect_metadata.keys()):
+                meta = effect_metadata[effect_id]
+                name = meta.get('name', f'Effect {effect_id}')
+                
+                # Build type indicators
+                indicators = []
+                if meta.get('is_2d'):
+                    indicators.append('2D')
+                else:
+                    indicators.append('1D')
+                
+                if meta.get('uses_palette'):
+                    indicators.append('Pal')
+                
+                if meta.get('volume'):
+                    indicators.append('Vol')
+                
+                if meta.get('frequency'):
+                    indicators.append('Freq')
+                
+                # Format: "ID: Name (1D, Pal)" or "ID: Name (2D, Vol, Freq)"
+                if indicators:
+                    indicator_str = ', '.join(indicators)
+                    effect_lines.append(f"EFFECT-{effect_id} = {effect_id}: {name} ({indicator_str})\n")
+                else:
+                    effect_lines.append(f"EFFECT-{effect_id} = {effect_id}: {name}\n")
+            
+            # Write updated NLS file
+            with open(nls_file, 'w') as f:
+                f.writelines(filtered_lines)
+                f.writelines(effect_lines)
+            
+            LOGGER.info(f"Updated NLS file with {len(effect_metadata)} effect names and metadata")
+            
+        except Exception as e:
+            LOGGER.error(f"Failed to update effect NLS: {e}")
     
     def _update_preset_nls(self, presets: Dict[int, str]):
         """

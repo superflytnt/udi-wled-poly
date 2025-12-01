@@ -424,6 +424,73 @@ class WLEDDevice:
             LOGGER.warning(f"WLED {self.host}: Failed to get presets - {e}")
         return {}
     
+    def get_effect_metadata(self) -> Dict[int, Dict[str, Any]]:
+        """
+        Fetch effect metadata from device (fxdata).
+        
+        Returns:
+            Dict mapping effect ID to metadata dict with keys:
+            - is_2d: bool - True if 2D effect
+            - uses_palette: bool - True if effect uses palette colors
+            - volume: bool - True if volume reactive (audio)
+            - frequency: bool - True if frequency reactive (audio)
+        """
+        metadata = {}
+        try:
+            # Get effect names
+            effects_response = requests.get(f"{self._base_url}/json/effects", timeout=self.timeout)
+            fxdata_response = requests.get(f"{self._base_url}/json/fxdata", timeout=self.timeout)
+            
+            if effects_response.status_code == 200 and fxdata_response.status_code == 200:
+                effects = effects_response.json()
+                fxdata = fxdata_response.json()
+                
+                for i, (name, data) in enumerate(zip(effects, fxdata)):
+                    if not name or name == '-':
+                        continue
+                    
+                    # Parse fxdata format: "params;colors;palette;flags;options"
+                    # Flags can be: 0, 01, 1, 2, 01v, 1v, 2v, 01f, 1f, 2f, etc.
+                    meta = {
+                        'name': name,
+                        'is_2d': False,
+                        'uses_palette': False,
+                        'volume': False,
+                        'frequency': False
+                    }
+                    
+                    if data:
+                        parts = data.split(';')
+                        if len(parts) >= 3:
+                            # Third part is palette section - if not empty, uses palette
+                            palette_part = parts[2].strip() if len(parts) > 2 else ''
+                            meta['uses_palette'] = bool(palette_part and palette_part != '!')
+                        
+                        if len(parts) >= 4:
+                            # Fourth part contains flags
+                            flags = parts[3].strip()
+                            # Remove any key=value options after the flags
+                            if flags:
+                                flag_part = flags.split(',')[0] if ',' in flags else flags
+                                
+                                # Check for 2D (flag contains '2')
+                                meta['is_2d'] = '2' in flag_part
+                                
+                                # Check for volume reactive (ends with 'v')
+                                meta['volume'] = 'v' in flag_part.lower()
+                                
+                                # Check for frequency reactive (ends with 'f')
+                                meta['frequency'] = 'f' in flag_part.lower()
+                    
+                    metadata[i] = meta
+                
+                LOGGER.info(f"WLED {self.host}: Parsed metadata for {len(metadata)} effects")
+                
+        except Exception as e:
+            LOGGER.warning(f"WLED {self.host}: Failed to get effect metadata - {e}")
+        
+        return metadata
+    
     def set_segment_state(self, segment_id: int, **kwargs) -> bool:
         """
         Set state for a specific segment.

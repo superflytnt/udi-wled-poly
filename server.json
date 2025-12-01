@@ -4,6 +4,7 @@
   "longPoll": 120,
   "type": "python3",
   "executable": "wled_poly.py",
+  "discover": true,
   "credits": [
     {
       "title": "WLED Polyglot NodeServer",
@@ -12,7 +13,7 @@
       "date": "2024-12-01"
     }
   ],
-  "docs": "https://github.com/sethkaplan/udi-wled-poly",
+  "docs": "https://github.com/superflytnt/udi-wled-poly",
   "logLevel": "INFO"
 }
 
