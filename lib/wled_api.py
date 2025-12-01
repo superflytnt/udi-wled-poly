@@ -444,7 +444,7 @@ class WLEDDiscovery:
     """
     Discovery for WLED devices
     
-    Uses HTTP probe to discover WLED devices on the local network.
+    Uses parallel HTTP probing to discover WLED devices on the local network.
     """
     
     def __init__(self):
@@ -452,15 +452,19 @@ class WLEDDiscovery:
     
     def discover(self, timeout: float = 10.0) -> List[Dict[str, Any]]:
         """
-        Discover WLED devices on the network using HTTP probing.
+        Discover WLED devices on the network using parallel HTTP probing.
         
         Args:
-            timeout: Discovery timeout in seconds
+            timeout: Total discovery timeout in seconds
             
         Returns:
             List of discovered devices with ip, port, name, mac
         """
+        import concurrent.futures
+        import threading
+        
         devices = []
+        devices_lock = threading.Lock()
         
         # Get local IP to determine subnet
         local_ip = self._get_local_ip()
@@ -472,24 +476,39 @@ class WLEDDiscovery:
         subnet_prefix = '.'.join(local_ip.split('.')[:3])
         ips_to_probe = [f"{subnet_prefix}.{i}" for i in range(1, 255)]
         
-        LOGGER.info(f"Probing subnet {subnet_prefix}.0/24 for WLED devices...")
+        LOGGER.info(f"Scanning subnet {subnet_prefix}.0/24 for WLED devices (parallel probe)...")
         
-        # Probe each IP
-        for ip in ips_to_probe:
-            device = self._probe_ip(ip, timeout=1.0)
+        def probe_and_collect(ip: str):
+            """Probe IP and add to results if WLED found"""
+            device = self._probe_ip(ip, timeout=0.5)
             if device:
-                devices.append(device)
+                with devices_lock:
+                    devices.append(device)
         
-        LOGGER.info(f"Discovery found {len(devices)} WLED device(s)")
+        # Use ThreadPoolExecutor for parallel probing (50 threads max)
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+                # Submit all probes
+                futures = [executor.submit(probe_and_collect, ip) for ip in ips_to_probe]
+                
+                # Wait for all to complete (with overall timeout)
+                concurrent.futures.wait(futures, timeout=timeout)
+        except Exception as e:
+            LOGGER.error(f"Discovery error: {e}")
+        
+        LOGGER.info(f"Discovery complete: found {len(devices)} WLED device(s)")
+        for d in devices:
+            LOGGER.info(f"  - {d['name']} at {d['ip']}")
+        
         return devices
     
-    def _probe_ip(self, ip: str, timeout: float = 1.0) -> Optional[Dict[str, Any]]:
+    def _probe_ip(self, ip: str, timeout: float = 0.5) -> Optional[Dict[str, Any]]:
         """Probe a single IP for WLED device"""
         try:
             response = requests.get(f"http://{ip}/json/info", timeout=timeout)
             if response.status_code == 200:
                 data = response.json()
-                # Check if it's a WLED device
+                # Check if it's a WLED device (has version and name)
                 if 'ver' in data and 'name' in data:
                     device = {
                         'ip': ip,
@@ -497,10 +516,14 @@ class WLEDDiscovery:
                         'name': data.get('name', ip),
                         'mac': data.get('mac', '')
                     }
-                    LOGGER.info(f"Discovered WLED: {device['name']} at {ip}")
+                    LOGGER.info(f"Found WLED device: {device['name']} at {ip}")
                     return device
-        except:
-            pass  # Expected for non-WLED IPs
+        except requests.exceptions.Timeout:
+            pass  # Expected for non-responsive IPs
+        except requests.exceptions.ConnectionError:
+            pass  # Expected for non-listening IPs
+        except Exception:
+            pass  # Any other error, skip silently
         return None
     
     def _get_local_ip(self) -> Optional[str]:
@@ -510,8 +533,10 @@ class WLEDDiscovery:
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
             s.close()
+            LOGGER.info(f"Local IP detected: {ip}")
             return ip
-        except Exception:
+        except Exception as e:
+            LOGGER.error(f"Failed to get local IP: {e}")
             return None
     
     def discover_simple(self, timeout: float = 5.0) -> List[str]:
