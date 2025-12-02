@@ -362,6 +362,34 @@ PALETTE-69 = 69: Unknown 69
 PALETTE-70 = 70: Unknown 70
 PALETTE-71 = 71: Unknown 71
 
-# Preset Names (defaults - will be updated from devices on startup)
+# Preset Names (from WLED devices)
 PRESET-0 = 0: None
+PRESET-1 = 1: Chunchun
+PRESET-2 = 2: Dancing Shadows
+PRESET-3 = 3: Fireworks 1D
+PRESET-4 = 4: Fireworks Starburst
+PRESET-5 = 5: Flow
+PRESET-6 = 6: Lake
+PRESET-7 = 7: Meteor
+PRESET-8 = 8: Noise 3
+PRESET-9 = 9: Glitter
+PRESET-10 = 10: Meteor RB
+PRESET-11 = 11: The Matrix
+PRESET-12 = 12: Fire Flow
+PRESET-13 = 13: Rainbow
+PRESET-14 = 14: Candy Cane
+PRESET-15 = 15: Lava
+PRESET-16 = 16: Dtw to Dia
+PRESET-17 = 17: Chase 2
+PRESET-18 = 18: Colorwaves
+PRESET-19 = 19: Glitter
+PRESET-20 = 20: Red Flow
+PRESET-21 = 21: Breeze
+PRESET-22 = 22: Commanders
+PRESET-23 = 23: Terps
+PRESET-95 = 95: W1-Night Light
+PRESET-96 = 96: W2-Relax
+PRESET-97 = 97: W3-Read
+PRESET-98 = 98: W4-Concentrate
+PRESET-99 = 99: W5-Energize
 
