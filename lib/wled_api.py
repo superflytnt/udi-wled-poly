@@ -666,6 +666,11 @@ class WLEDDiscovery:
             
         except ImportError:
             LOGGER.warning("zeroconf not installed - skipping mDNS discovery")
+        except OSError as e:
+            if e.errno == 48:  # Address already in use
+                LOGGER.info("mDNS port 5353 in use by system - using HTTP probe only")
+            else:
+                LOGGER.warning(f"mDNS discovery error: {e}")
         except Exception as e:
             LOGGER.warning(f"mDNS discovery error: {e}")
         
@@ -708,7 +713,7 @@ class WLEDDiscovery:
         
         def probe_and_collect(ip: str, is_retry: bool = False):
             """Probe IP and add to results if WLED found"""
-            device = self._probe_ip(ip, timeout=1.0)  # Increased timeout to 1s
+            device = self._probe_ip(ip, timeout=2.0)  # 2s timeout for reliability
             if device:
                 with devices_lock:
                     if not any(d['ip'] == ip for d in devices):
