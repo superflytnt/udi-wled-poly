@@ -83,11 +83,8 @@
                     <p id="" editor="nightlight_dur" optional="true" />
                 </cmd>
                 <cmd id="NIGHTLIGHT_OFF" />
-                <cmd id="SYNC_SEND">
-                    <p id="" editor="bool" />
-                </cmd>
-                <cmd id="SYNC_RECEIVE">
-                    <p id="" editor="bool" />
+                <cmd id="SET_SYNC">
+                    <p id="" editor="sync_mode" />
                 </cmd>
                 <cmd id="PLAYLIST_ON">
                     <p id="" editor="raw_byte" optional="true" />

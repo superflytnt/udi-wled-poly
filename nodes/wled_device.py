@@ -392,24 +392,19 @@ class WLEDDevice(udi_interface.Node):
             self._device.set_state(nl={"on": False})
             self.update_status()
     
-    def cmd_sync_send(self, command):
-        """Enable/disable UDP sync send"""
+    def cmd_set_sync(self, command):
+        """Set UDP sync mode: 0=off, 1=send only, 2=recv only, 3=both"""
         value = int(command.get('value', 0))
-        send = value > 0
-        LOGGER.info(f"Set Sync Send: {self.name} to {send}")
+        
+        # Decode sync mode to send/recv flags
+        send = value in (1, 3)  # Send Only or Both
+        recv = value in (2, 3)  # Recv Only or Both
+        
+        mode_names = {0: "Off", 1: "Send Only", 2: "Recv Only", 3: "Send+Recv"}
+        LOGGER.info(f"Set Sync: {self.name} to {mode_names.get(value, value)}")
         
         if self._device:
-            self._device.set_state(udpn={"send": send})
-            self.update_status()
-    
-    def cmd_sync_receive(self, command):
-        """Enable/disable UDP sync receive"""
-        value = int(command.get('value', 0))
-        recv = value > 0
-        LOGGER.info(f"Set Sync Receive: {self.name} to {recv}")
-        
-        if self._device:
-            self._device.set_state(udpn={"recv": recv})
+            self._device.set_state(udpn={"send": send, "recv": recv})
             self.update_status()
     
     def cmd_save_preset(self, command):
@@ -460,8 +455,7 @@ class WLEDDevice(udi_interface.Node):
         'SET_LIVE': cmd_set_live,
         'NIGHTLIGHT_ON': cmd_nightlight_on,
         'NIGHTLIGHT_OFF': cmd_nightlight_off,
-        'SYNC_SEND': cmd_sync_send,
-        'SYNC_RECEIVE': cmd_sync_receive,
+        'SET_SYNC': cmd_set_sync,
         'PLAYLIST_ON': cmd_playlist_on,
         'PLAYLIST_OFF': cmd_playlist_off,
         'QUERY': query,

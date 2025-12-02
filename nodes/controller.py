@@ -24,7 +24,7 @@ class Controller(udi_interface.Node):
     id = 'controller'
     
     # Plugin version (major*100 + minor*10 + patch)
-    VERSION = 145  # v1.4.5
+    VERSION = 146  # v1.4.6
     
     # Node drivers (status values)
     drivers = [
@@ -126,7 +126,7 @@ class Controller(udi_interface.Node):
         """Set configuration documentation - displays in PG3 Configuration tab"""
         html = '''
 <h2>WLED Polyglot v3 NodeServer</h2>
-<p style="color: #888;">Version 1.4.5</p>
+<p style="color: #888;">Version 1.4.6</p>
 
 <br>
 
