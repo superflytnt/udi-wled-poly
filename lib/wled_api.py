@@ -466,24 +466,24 @@ class WLEDDevice:
                     if data:
                         parts = data.split(';')
                         if len(parts) >= 3:
-                            # Third part is palette section - if not empty, uses palette
+                            # Third part is palette section - '!' means uses palette
                             palette_part = parts[2].strip() if len(parts) > 2 else ''
-                            meta['uses_palette'] = bool(palette_part and palette_part != '!')
+                            meta['uses_palette'] = '!' in palette_part
                         
                         if len(parts) >= 4:
-                            # Fourth part contains flags
+                            # Fourth part contains flags (e.g., "01", "2", "01v", "2f")
                             flags = parts[3].strip()
-                            # Remove any key=value options after the flags
                             if flags:
-                                flag_part = flags.split(',')[0] if ',' in flags else flags
+                                # Remove any key=value options (e.g., "01v;m12=0" -> "01v")
+                                flag_part = flags.split(';')[0] if ';' in flags else flags
                                 
                                 # Check for 2D (flag contains '2')
                                 meta['is_2d'] = '2' in flag_part
                                 
-                                # Check for volume reactive (ends with 'v')
+                                # Check for volume reactive (contains 'v')
                                 meta['volume'] = 'v' in flag_part.lower()
                                 
-                                # Check for frequency reactive (ends with 'f')
+                                # Check for frequency reactive (contains 'f')
                                 meta['frequency'] = 'f' in flag_part.lower()
                     
                     metadata[i] = meta

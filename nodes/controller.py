@@ -24,7 +24,7 @@ class Controller(udi_interface.Node):
     id = 'controller'
     
     # Plugin version (major*100 + minor*10 + patch)
-    VERSION = 150  # v1.5.0
+    VERSION = 151  # v1.5.1
     
     # Node drivers (status values)
     drivers = [
@@ -89,14 +89,14 @@ class Controller(udi_interface.Node):
         # Load configuration and add configured devices
         self._load_config()
         
-        # Rebuild presets from configured devices first
-        if self._devices:
-            LOGGER.info("Building preset list from devices...")
-            self.rebuild_presets()
-        
         # Auto-discover additional WLED devices on startup (this can take a while)
         LOGGER.info("Running auto-discovery for WLED devices...")
         self.discover()
+        
+        # Rebuild presets and effects with metadata after all devices are loaded
+        if self._devices:
+            LOGGER.info("Building preset and effect lists from devices...")
+            self.rebuild_presets()  # This also calls _rebuild_effects_nls()
         
         # Show startup notice
         timestamp = datetime.datetime.now().strftime("%m/%d %H:%M")
