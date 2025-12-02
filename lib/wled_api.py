@@ -511,7 +511,7 @@ class WLEDDiscovery:
     """
     Discovery for WLED devices
     
-    Uses parallel HTTP probing to discover WLED devices on the local network.
+    Uses mDNS (primary) + HTTP probing (fallback) to discover WLED devices.
     """
     
     def __init__(self):
@@ -519,7 +519,7 @@ class WLEDDiscovery:
     
     def discover(self, timeout: float = 10.0) -> List[Dict[str, Any]]:
         """
-        Discover WLED devices on the network using parallel HTTP probing.
+        Discover WLED devices using mDNS first, then HTTP probe as fallback.
         
         Args:
             timeout: Total discovery timeout in seconds
@@ -527,49 +527,216 @@ class WLEDDiscovery:
         Returns:
             List of discovered devices with ip, port, name, mac
         """
-        import concurrent.futures
+        import time
+        start_time = time.time()
+        
+        LOGGER.info("=" * 50)
+        LOGGER.info("WLED Discovery started")
+        LOGGER.info("=" * 50)
+        
+        all_devices = {}  # Use dict to dedupe by IP
+        
+        # Phase 1: mDNS discovery (fast, ~3s)
+        mdns_start = time.time()
+        LOGGER.info("Phase 1: mDNS discovery started...")
+        
+        try:
+            mdns_devices = self._discover_mdns(timeout=3.0)
+            mdns_elapsed = time.time() - mdns_start
+            
+            for device in mdns_devices:
+                all_devices[device['ip']] = device
+                LOGGER.info(f"  mDNS: Found \"{device['name']}\" ({device['ip']}) in {mdns_elapsed:.1f}s")
+            
+            LOGGER.info(f"Phase 1 complete: {len(mdns_devices)} device(s) via mDNS in {mdns_elapsed:.1f}s")
+        except Exception as e:
+            LOGGER.warning(f"Phase 1 mDNS failed: {e}")
+            mdns_elapsed = time.time() - mdns_start
+        
+        # Phase 2: HTTP probe for any missed devices
+        http_start = time.time()
+        remaining_timeout = max(1.0, timeout - (time.time() - start_time))
+        found_ips = set(all_devices.keys())
+        
+        LOGGER.info(f"Phase 2: HTTP probe started (excluding {len(found_ips)} already found)...")
+        
+        try:
+            http_devices = self._discover_http(timeout=remaining_timeout, exclude_ips=found_ips)
+            http_elapsed = time.time() - http_start
+            
+            new_count = 0
+            for device in http_devices:
+                if device['ip'] not in all_devices:
+                    all_devices[device['ip']] = device
+                    new_count += 1
+                    LOGGER.info(f"  HTTP: Found \"{device['name']}\" ({device['ip']})")
+            
+            LOGGER.info(f"Phase 2 complete: {new_count} additional device(s) via HTTP in {http_elapsed:.1f}s")
+        except Exception as e:
+            LOGGER.warning(f"Phase 2 HTTP probe failed: {e}")
+        
+        # Summary
+        total_elapsed = time.time() - start_time
+        devices = list(all_devices.values())
+        
+        LOGGER.info("=" * 50)
+        LOGGER.info(f"Discovery complete: {len(devices)} total device(s) in {total_elapsed:.1f}s")
+        for d in devices:
+            LOGGER.info(f"  - {d['name']} ({d['ip']})")
+        LOGGER.info("=" * 50)
+        
+        return devices
+    
+    def _discover_mdns(self, timeout: float = 3.0) -> List[Dict[str, Any]]:
+        """
+        Discover WLED devices via mDNS (Zeroconf).
+        WLED devices register as _wled._tcp.local
+        
+        Args:
+            timeout: Discovery timeout in seconds
+            
+        Returns:
+            List of discovered devices
+        """
+        import time
         import threading
         
         devices = []
         devices_lock = threading.Lock()
         
-        # Get local IP to determine subnet
-        local_ip = self._get_local_ip()
-        if not local_ip:
-            LOGGER.warning("Could not determine local IP for discovery")
-            return devices
-        
-        # Generate IPs to probe (same /24 subnet)
-        subnet_prefix = '.'.join(local_ip.split('.')[:3])
-        ips_to_probe = [f"{subnet_prefix}.{i}" for i in range(1, 255)]
-        
-        LOGGER.info(f"Scanning subnet {subnet_prefix}.0/24 for WLED devices (parallel probe)...")
-        
-        def probe_and_collect(ip: str):
-            """Probe IP and add to results if WLED found"""
-            device = self._probe_ip(ip, timeout=0.5)
-            if device:
-                with devices_lock:
-                    devices.append(device)
-        
-        # Use ThreadPoolExecutor for parallel probing (50 threads max)
         try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-                # Submit all probes
-                futures = [executor.submit(probe_and_collect, ip) for ip in ips_to_probe]
+            from zeroconf import ServiceBrowser, Zeroconf, ServiceListener
+            
+            class WLEDListener(ServiceListener):
+                def __init__(self):
+                    self.start_time = time.time()
                 
-                # Wait for all to complete (with overall timeout)
-                concurrent.futures.wait(futures, timeout=timeout)
+                def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+                    try:
+                        info = zc.get_service_info(type_, name)
+                        if info:
+                            # Get IP address
+                            if info.addresses:
+                                ip = '.'.join(str(b) for b in info.addresses[0])
+                            elif info.parsed_addresses():
+                                ip = info.parsed_addresses()[0]
+                            else:
+                                return
+                            
+                            # Get device name (strip .local suffix)
+                            device_name = name.replace('._wled._tcp.local.', '').replace('.local', '')
+                            
+                            device = {
+                                'ip': ip,
+                                'port': info.port or 80,
+                                'name': device_name,
+                                'mac': ''
+                            }
+                            
+                            elapsed = time.time() - self.start_time
+                            with devices_lock:
+                                # Avoid duplicates
+                                if not any(d['ip'] == ip for d in devices):
+                                    devices.append(device)
+                                    LOGGER.debug(f"mDNS found: {device_name} at {ip} ({elapsed:.2f}s)")
+                    except Exception as e:
+                        LOGGER.debug(f"mDNS service info error: {e}")
+                
+                def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+                    pass
+                
+                def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+                    pass
+            
+            # Start mDNS browser
+            zeroconf = Zeroconf()
+            listener = WLEDListener()
+            browser = ServiceBrowser(zeroconf, "_wled._tcp.local.", listener)
+            
+            # Wait for timeout
+            time.sleep(timeout)
+            
+            # Cleanup
+            browser.cancel()
+            zeroconf.close()
+            
+        except ImportError:
+            LOGGER.warning("zeroconf not installed - skipping mDNS discovery")
         except Exception as e:
-            LOGGER.error(f"Discovery error: {e}")
-        
-        LOGGER.info(f"Discovery complete: found {len(devices)} WLED device(s)")
-        for d in devices:
-            LOGGER.info(f"  - {d['name']} at {d['ip']}")
+            LOGGER.warning(f"mDNS discovery error: {e}")
         
         return devices
     
-    def _probe_ip(self, ip: str, timeout: float = 0.5) -> Optional[Dict[str, Any]]:
+    def _discover_http(self, timeout: float = 7.0, exclude_ips: set = None) -> List[Dict[str, Any]]:
+        """
+        Discover WLED devices via HTTP probing with improved reliability.
+        
+        Args:
+            timeout: Total discovery timeout in seconds
+            exclude_ips: Set of IPs to skip (already found via mDNS)
+            
+        Returns:
+            List of discovered devices
+        """
+        import concurrent.futures
+        import threading
+        import time
+        
+        devices = []
+        devices_lock = threading.Lock()
+        exclude_ips = exclude_ips or set()
+        
+        # Get local IP to determine subnet
+        local_ip = self._get_local_ip()
+        if not local_ip:
+            LOGGER.warning("Could not determine local IP for HTTP probe")
+            return devices
+        
+        # Generate IPs to probe (same /24 subnet), excluding already found
+        subnet_prefix = '.'.join(local_ip.split('.')[:3])
+        ips_to_probe = [f"{subnet_prefix}.{i}" for i in range(1, 255) 
+                       if f"{subnet_prefix}.{i}" not in exclude_ips]
+        
+        LOGGER.debug(f"HTTP probe: scanning {len(ips_to_probe)} IPs on {subnet_prefix}.0/24")
+        
+        failed_ips = []  # Track failed IPs for retry
+        failed_lock = threading.Lock()
+        
+        def probe_and_collect(ip: str, is_retry: bool = False):
+            """Probe IP and add to results if WLED found"""
+            device = self._probe_ip(ip, timeout=1.0)  # Increased timeout to 1s
+            if device:
+                with devices_lock:
+                    if not any(d['ip'] == ip for d in devices):
+                        devices.append(device)
+                        if is_retry:
+                            LOGGER.debug(f"HTTP retry found: {device['name']} at {ip}")
+            elif not is_retry:
+                # Track for retry
+                with failed_lock:
+                    failed_ips.append(ip)
+        
+        # First pass: probe all IPs with 30 workers (reduced from 50)
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
+                futures = [executor.submit(probe_and_collect, ip, False) for ip in ips_to_probe]
+                concurrent.futures.wait(futures, timeout=timeout * 0.7)  # Use 70% of timeout for first pass
+        except Exception as e:
+            LOGGER.error(f"HTTP probe error: {e}")
+        
+        # Second pass: retry failed IPs (some may have been temporarily busy)
+        if failed_ips and (timeout * 0.3) > 1.0:
+            LOGGER.debug(f"HTTP probe: retrying {len(failed_ips)} failed IPs...")
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+                    futures = [executor.submit(probe_and_collect, ip, True) for ip in failed_ips]
+                    concurrent.futures.wait(futures, timeout=timeout * 0.3)
+            except Exception as e:
+                LOGGER.debug(f"HTTP retry error: {e}")
+        
+        return devices
+    
+    def _probe_ip(self, ip: str, timeout: float = 1.0) -> Optional[Dict[str, Any]]:
         """Probe a single IP for WLED device"""
         try:
             response = requests.get(f"http://{ip}/json/info", timeout=timeout)
@@ -583,7 +750,6 @@ class WLEDDiscovery:
                         'name': data.get('name', ip),
                         'mac': data.get('mac', '')
                     }
-                    LOGGER.info(f"Found WLED device: {device['name']} at {ip}")
                     return device
         except requests.exceptions.Timeout:
             pass  # Expected for non-responsive IPs
@@ -600,7 +766,6 @@ class WLEDDiscovery:
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
             s.close()
-            LOGGER.info(f"Local IP detected: {ip}")
             return ip
         except Exception as e:
             LOGGER.error(f"Failed to get local IP: {e}")
