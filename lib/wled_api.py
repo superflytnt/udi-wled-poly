@@ -13,7 +13,11 @@ import socket
 from typing import Optional, Dict, List, Any, Tuple
 from dataclasses import dataclass, field
 
-LOGGER = logging.getLogger(__name__)
+try:
+    import udi_interface
+    LOGGER = udi_interface.LOGGER
+except ImportError:
+    LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
