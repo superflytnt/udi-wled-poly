@@ -18,37 +18,43 @@ class WLEDDevice(udi_interface.Node):
     
     Provides full control of a single WLED device.
     
-    Status (Combined for cleaner UI):
+    Status (Partially combined for cleaner UI):
         ST (Power): On/Off state
         GV0 (Brightness): 0-100%
         GV1 (Effect): Current effect ID
         GV2 (Palette): Current palette ID
         GV3 (Preset): Current preset ID
-        GV4 (Color): 24-bit RGB color as integer (R*65536 + G*256 + B)
-        GV5 (Online): Connection status
-        GV6 (FX Settings): Speed*256 + Intensity encoded
-        GV7 (Transition): Transition time in 100ms units
-        GV8 (Live): Live/UDP override active
-        GV9 (Nightlight): 0=off, 1-255=duration in minutes when active
-        GV10 (Sync): 0=off, 1=send, 2=recv, 3=both
+        GV4 (Red): Red component 0-255
+        GV5 (Green): Green component 0-255
+        GV6 (Blue): Blue component 0-255
+        GV7 (Online): Connection status
+        GV8 (Speed): Effect speed 0-100%
+        GV9 (Intensity): Effect intensity 0-100%
+        GV10 (Transition): Transition time in 100ms units
+        GV11 (Live): Live/UDP override active
+        GV12 (Nightlight): 0=off, 1-255=duration in minutes
+        GV13 (Sync): 0=off, 1=send, 2=recv, 3=both
     """
     
     id = 'wled_device'
     
-    # Node drivers (status values) - Combined for cleaner UI
+    # Node drivers (status values) - Sync and Nightlight combined, RGB/Speed kept separate for readability
     drivers = [
         {'driver': 'ST', 'value': 0, 'uom': 2},       # Power (On/Off)
         {'driver': 'GV0', 'value': 0, 'uom': 51},     # Brightness (%)
         {'driver': 'GV1', 'value': 0, 'uom': 25},     # Effect
         {'driver': 'GV2', 'value': 0, 'uom': 25},     # Palette
         {'driver': 'GV3', 'value': 0, 'uom': 25},     # Preset
-        {'driver': 'GV4', 'value': 0, 'uom': 56},     # Color (24-bit RGB integer)
-        {'driver': 'GV5', 'value': 0, 'uom': 2},      # Online
-        {'driver': 'GV6', 'value': 0, 'uom': 56},     # FX Settings (speed*256 + intensity)
-        {'driver': 'GV7', 'value': 7, 'uom': 56},     # Transition (100ms units)
-        {'driver': 'GV8', 'value': 0, 'uom': 2},      # Live override
-        {'driver': 'GV9', 'value': 0, 'uom': 56},     # Nightlight (0=off, else duration)
-        {'driver': 'GV10', 'value': 0, 'uom': 25},    # Sync (0=off, 1=send, 2=recv, 3=both)
+        {'driver': 'GV4', 'value': 0, 'uom': 56},     # Red
+        {'driver': 'GV5', 'value': 0, 'uom': 56},     # Green
+        {'driver': 'GV6', 'value': 0, 'uom': 56},     # Blue
+        {'driver': 'GV7', 'value': 0, 'uom': 2},      # Online
+        {'driver': 'GV8', 'value': 50, 'uom': 51},    # Speed (%)
+        {'driver': 'GV9', 'value': 50, 'uom': 51},    # Intensity (%)
+        {'driver': 'GV10', 'value': 7, 'uom': 56},    # Transition (100ms units)
+        {'driver': 'GV11', 'value': 0, 'uom': 2},     # Live override
+        {'driver': 'GV12', 'value': 0, 'uom': 45},    # Nightlight (0=off, else minutes) - UOM 45 = minutes
+        {'driver': 'GV13', 'value': 0, 'uom': 25},    # Sync (0=off, 1=send, 2=recv, 3=both)
     ]
     
     def __init__(self, polyglot, primary, address, name, ip: str, port: int = 80, wled_api=None):
@@ -129,7 +135,7 @@ class WLEDDevice(udi_interface.Node):
                 success = self._device.online
             
             # Update online status
-            self.setDriver('GV5', 1 if self._device.online else 0)
+            self.setDriver('GV7', 1 if self._device.online else 0)
             
             if self._device.online and self._device.state:
                 state = self._device.state
@@ -151,33 +157,34 @@ class WLEDDevice(udi_interface.Node):
                 preset = state.preset if state.preset >= 0 else 0
                 self.setDriver('GV3', preset)
                 
-                # Update color (combined 24-bit RGB: R*65536 + G*256 + B)
+                # Update color (separate RGB)
                 color = state.primary_color
                 if len(color) >= 3:
-                    color_int = (color[0] << 16) + (color[1] << 8) + color[2]
-                    self.setDriver('GV4', color_int)
+                    self.setDriver('GV4', color[0])  # Red
+                    self.setDriver('GV5', color[1])  # Green
+                    self.setDriver('GV6', color[2])  # Blue
                 
-                # Update FX settings (from main segment) - combined: speed*256 + intensity
+                # Update speed and intensity (from main segment)
                 speed_pct = 50
                 intensity_pct = 50
                 if state.segments and len(state.segments) > 0:
                     seg = state.segments[state.main_segment] if state.main_segment < len(state.segments) else state.segments[0]
                     speed_pct = int((seg.speed / 255) * 100)
                     intensity_pct = int((seg.intensity / 255) * 100)
-                    fx_combined = (speed_pct << 8) + intensity_pct
-                    self.setDriver('GV6', fx_combined)
+                    self.setDriver('GV8', speed_pct)
+                    self.setDriver('GV9', intensity_pct)
                 
                 # Update transition time
-                self.setDriver('GV7', state.transition)
+                self.setDriver('GV10', state.transition)
                 
                 # Update live override status
-                self.setDriver('GV8', 1 if state.live else 0)
+                self.setDriver('GV11', 1 if state.live else 0)
                 
                 # Update nightlight (combined: 0=off, else duration in minutes)
                 if state.nightlight_on:
-                    self.setDriver('GV9', state.nightlight_duration)
+                    self.setDriver('GV12', state.nightlight_duration)
                 else:
-                    self.setDriver('GV9', 0)
+                    self.setDriver('GV12', 0)
                 
                 # Update sync (combined: 0=off, 1=send, 2=recv, 3=both)
                 sync_val = 0
@@ -187,7 +194,7 @@ class WLEDDevice(udi_interface.Node):
                     sync_val = 1  # Send only
                 elif state.sync_receive:
                     sync_val = 2  # Receive only
-                self.setDriver('GV10', sync_val)
+                self.setDriver('GV13', sync_val)
                 
                 LOGGER.debug(f"{self.name}: Power={state.on}, Brightness={brightness_pct}%, Effect={state.effect}, Speed={speed_pct}%")
             

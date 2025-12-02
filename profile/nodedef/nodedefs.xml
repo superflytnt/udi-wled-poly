@@ -16,7 +16,7 @@
         </cmds>
     </nodeDef>
     
-    <!-- WLED Device Node - Individual WLED controller (Combined status for cleaner UI) -->
+    <!-- WLED Device Node - Individual WLED controller (Sync/Nightlight combined, RGB separate) -->
     <nodeDef id="wled_device" nls="wled_device">
         <sts>
             <st id="ST" editor="bool" />
@@ -24,13 +24,16 @@
             <st id="GV1" editor="effect" />
             <st id="GV2" editor="palette" />
             <st id="GV3" editor="preset" />
-            <st id="GV4" editor="raw_count" />
-            <st id="GV5" editor="bool" />
-            <st id="GV6" editor="raw_count" />
-            <st id="GV7" editor="raw_byte" />
-            <st id="GV8" editor="bool" />
-            <st id="GV9" editor="raw_byte" />
-            <st id="GV10" editor="sync_mode" />
+            <st id="GV4" editor="raw_byte" />
+            <st id="GV5" editor="raw_byte" />
+            <st id="GV6" editor="raw_byte" />
+            <st id="GV7" editor="bool" />
+            <st id="GV8" editor="percent" />
+            <st id="GV9" editor="percent" />
+            <st id="GV10" editor="raw_byte" />
+            <st id="GV11" editor="bool" />
+            <st id="GV12" editor="minutes" />
+            <st id="GV13" editor="sync_mode" />
         </sts>
         <cmds>
             <sends />
