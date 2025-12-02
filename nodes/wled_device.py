@@ -53,7 +53,7 @@ class WLEDDevice(udi_interface.Node):
         {'driver': 'GV9', 'value': 50, 'uom': 51},    # Intensity (%)
         {'driver': 'GV10', 'value': 7, 'uom': 56},    # Transition (100ms units)
         {'driver': 'GV11', 'value': 0, 'uom': 2},     # Live override
-        {'driver': 'GV12', 'value': 0, 'uom': 45},    # Nightlight (0=off, else minutes) - UOM 45 = minutes
+        {'driver': 'GV12', 'value': 0, 'uom': 25},    # Nightlight (0=off, else duration) - uses NLS
         {'driver': 'GV13', 'value': 0, 'uom': 25},    # Sync (0=off, 1=send, 2=recv, 3=both)
     ]
     
@@ -367,14 +367,21 @@ class WLEDDevice(udi_interface.Node):
             self.update_status()
     
     def cmd_nightlight_on(self, command):
-        """Enable nightlight mode - gradually dims to target brightness"""
+        """Enable nightlight mode - gradually dims to target brightness. 0 = off."""
         duration = int(command.get('value', 60)) if command and 'value' in command else 60
-        LOGGER.info(f"Nightlight On: {self.name} for {duration} minutes")
         
-        if self._device:
-            # nl = nightlight settings
-            self._device.set_state(nl={"on": True, "dur": duration, "mode": 1, "tbri": 0})
-            self.update_status()
+        if duration == 0:
+            # Treat 0 as "off"
+            LOGGER.info(f"Nightlight Off: {self.name} (via duration 0)")
+            if self._device:
+                self._device.set_state(nl={"on": False})
+        else:
+            LOGGER.info(f"Nightlight On: {self.name} for {duration} minutes")
+            if self._device:
+                # nl = nightlight settings
+                self._device.set_state(nl={"on": True, "dur": duration, "mode": 1, "tbri": 0})
+        
+        self.update_status()
     
     def cmd_nightlight_off(self, command):
         """Disable nightlight mode"""

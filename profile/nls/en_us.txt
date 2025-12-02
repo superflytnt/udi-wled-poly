@@ -82,6 +82,15 @@ SYNC-1 = Send Only
 SYNC-2 = Recv Only
 SYNC-3 = Send+Recv
 
+# Nightlight duration options
+NLTIME-0 = Off
+NLTIME-15 = 15 min
+NLTIME-30 = 30 min
+NLTIME-45 = 45 min
+NLTIME-60 = 60 min
+NLTIME-90 = 90 min
+NLTIME-120 = 120 min
+
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid
 EFFECT-1 = 1: Blink

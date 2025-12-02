@@ -32,7 +32,7 @@
             <st id="GV9" editor="percent" />
             <st id="GV10" editor="raw_byte" />
             <st id="GV11" editor="bool" />
-            <st id="GV12" editor="minutes" />
+            <st id="GV12" editor="nightlight_dur" />
             <st id="GV13" editor="sync_mode" />
         </sts>
         <cmds>
@@ -79,7 +79,7 @@
                     <p id="" editor="bool" />
                 </cmd>
                 <cmd id="NIGHTLIGHT_ON">
-                    <p id="" editor="minutes" optional="true" />
+                    <p id="" editor="nightlight_dur" optional="true" />
                 </cmd>
                 <cmd id="NIGHTLIGHT_OFF" />
                 <cmd id="SYNC_SEND">

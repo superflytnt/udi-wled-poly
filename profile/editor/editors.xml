@@ -35,9 +35,9 @@
         <range uom="25" subset="0-250" nls="PRESET" />
     </editor>
     
-    <!-- Minutes (for nightlight duration, 0=off) -->
-    <editor id="minutes">
-        <range uom="45" min="0" max="255" step="1" />
+    <!-- Nightlight duration selector with predefined options -->
+    <editor id="nightlight_dur">
+        <range uom="25" subset="0,15,30,45,60,90,120" nls="NLTIME" />
     </editor>
     
     <!-- Sync mode selector (0=off, 1=send, 2=recv, 3=both) -->
