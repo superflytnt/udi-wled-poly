@@ -45,9 +45,8 @@ CMD-wled_device-SET_SPEED-NAME = Set Speed
 CMD-wled_device-SET_INTENSITY-NAME = Set Intensity
 CMD-wled_device-SET_TRANSITION-NAME = Set Transition
 CMD-wled_device-SET_LIVE-NAME = Live Override
-CMD-wled_device-NIGHTLIGHT_ON-NAME = Nightlight
-CMD-wled_device-NIGHTLIGHT_OFF-NAME = Nightlight Off
 CMD-wled_device-SET_SYNC-NAME = Sync
+CMD-wled_device-REBUILD_PRESETS-NAME = Rebuild Presets
 CMD-wled_device-PLAYLIST_ON-NAME = Start Playlist
 CMD-wled_device-PLAYLIST_OFF-NAME = Stop Playlist
 CMD-wled_device-QUERY-NAME = Query
@@ -97,6 +96,7 @@ VER-143 = v1.4.3
 VER-144 = v1.4.4
 VER-145 = v1.4.5
 VER-146 = v1.4.6
+VER-147 = v1.4.7
 
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid

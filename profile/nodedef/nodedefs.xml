@@ -79,10 +79,6 @@
                 <cmd id="SET_LIVE">
                     <p id="" editor="bool" />
                 </cmd>
-                <cmd id="NIGHTLIGHT_ON">
-                    <p id="" editor="nightlight_dur" optional="true" />
-                </cmd>
-                <cmd id="NIGHTLIGHT_OFF" />
                 <cmd id="SET_SYNC">
                     <p id="" editor="sync_mode" />
                 </cmd>
@@ -90,6 +86,7 @@
                     <p id="" editor="raw_byte" optional="true" />
                 </cmd>
                 <cmd id="PLAYLIST_OFF" />
+                <cmd id="REBUILD_PRESETS" />
                 <cmd id="QUERY" />
             </accepts>
         </cmds>
