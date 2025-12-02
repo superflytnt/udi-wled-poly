@@ -367,19 +367,20 @@ class WLEDDevice(udi_interface.Node):
             self.update_status()
     
     def cmd_nightlight_on(self, command):
-        """Enable nightlight mode - gradually dims to target brightness. 0 = off."""
+        """Set nightlight timer - gradually dims to off. 0 = disable timer."""
         duration = int(command.get('value', 60)) if command and 'value' in command else 60
         
         if duration == 0:
-            # Treat 0 as "off"
-            LOGGER.info(f"Nightlight Off: {self.name} (via duration 0)")
+            # Treat 0 as "disable nightlight"
+            LOGGER.info(f"Nightlight disabled: {self.name}")
             if self._device:
                 self._device.set_state(nl={"on": False})
         else:
-            LOGGER.info(f"Nightlight On: {self.name} for {duration} minutes")
+            LOGGER.info(f"Nightlight: {self.name} for {duration} minutes")
             if self._device:
-                # nl = nightlight settings
-                self._device.set_state(nl={"on": True, "dur": duration, "mode": 1, "tbri": 0})
+                # Turn device ON if not already, then start nightlight timer
+                # nl = nightlight settings (mode 1 = fade to tbri over dur minutes)
+                self._device.set_state(on=True, nl={"on": True, "dur": duration, "mode": 1, "tbri": 0})
         
         self.update_status()
     
