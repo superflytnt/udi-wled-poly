@@ -8,9 +8,14 @@ ST-controller-ST-NAME = Status
 ST-controller-GV0-NAME = Devices
 ST-controller-GV2-NAME = Online
 ST-controller-GV3-NAME = On
+ST-controller-GV4-NAME = Total LEDs
 ST-controller-GV1-NAME = Version
-CMD-controller-DISCOVER-NAME = Discover Devices
+CMD-controller-DISCOVER-NAME = Discover
 CMD-controller-REBUILD_PRESETS-NAME = Rebuild Presets
+CMD-controller-ALL_ON-NAME = All On
+CMD-controller-ALL_OFF-NAME = All Off
+CMD-controller-SET_ALL_BRI-NAME = All Brightness
+CMD-controller-SET_ALL_EFFECT-NAME = All Effect
 CMD-controller-QUERY-NAME = Query
 
 # WLED Device Node (Sync/Nightlight combined for cleaner UI)
@@ -101,6 +106,7 @@ VER-146 = v1.4.6
 VER-147 = v1.4.7
 VER-148 = v1.4.8
 VER-149 = v1.4.9
+VER-150 = v1.5.0
 
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid

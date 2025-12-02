@@ -208,6 +208,16 @@ class WLEDDevice(udi_interface.Node):
         self.update_status(full_sync=True)
         self.reportDrivers()
     
+    def _notify_controller(self):
+        """Notify controller to update its stats (online count, devices on, etc.)"""
+        try:
+            # Get the controller node and update its stats
+            controller = self.poly.getNode(self.primary)
+            if controller and hasattr(controller, 'update_stats'):
+                controller.update_stats()
+        except Exception as e:
+            LOGGER.debug(f"Could not notify controller: {e}")
+    
     def cmd_on(self, command=None):
         """Turn on the device"""
         LOGGER.info(f"Turn On: {self.name}")
@@ -224,6 +234,7 @@ class WLEDDevice(udi_interface.Node):
                 bri_val = int((brightness / 100) * 255)
                 self._device.set_brightness(bri_val)
             self.update_status()
+            self._notify_controller()
     
     def cmd_off(self, command=None):
         """Turn off the device"""
@@ -232,6 +243,7 @@ class WLEDDevice(udi_interface.Node):
         if self._device:
             self._device.set_power(False)
             self.update_status()
+            self._notify_controller()
     
     def cmd_fast_on(self, command=None):
         """Fast on (instant, no transition)"""
@@ -240,6 +252,7 @@ class WLEDDevice(udi_interface.Node):
         if self._device:
             self._device.set_state(on=True, transition=0)
             self.update_status()
+            self._notify_controller()
     
     def cmd_fast_off(self, command=None):
         """Fast off (instant, no transition)"""
@@ -248,6 +261,7 @@ class WLEDDevice(udi_interface.Node):
         if self._device:
             self._device.set_state(on=False, transition=0)
             self.update_status()
+            self._notify_controller()
     
     def cmd_brighten(self, command=None):
         """Brighten by 10%"""

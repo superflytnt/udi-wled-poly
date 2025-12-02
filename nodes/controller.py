@@ -24,15 +24,16 @@ class Controller(udi_interface.Node):
     id = 'controller'
     
     # Plugin version (major*100 + minor*10 + patch)
-    VERSION = 149  # v1.4.9
+    VERSION = 150  # v1.5.0
     
     # Node drivers (status values)
     drivers = [
         {'driver': 'ST', 'value': 1, 'uom': 2},      # Status (On/Off)
         {'driver': 'GV0', 'value': 0, 'uom': 56},    # Device Count
-        {'driver': 'GV1', 'value': 149, 'uom': 25},  # Version (uses NLS)
         {'driver': 'GV2', 'value': 0, 'uom': 56},    # Online Count
         {'driver': 'GV3', 'value': 0, 'uom': 56},    # Devices On (powered on)
+        {'driver': 'GV4', 'value': 0, 'uom': 56},    # Total LEDs
+        {'driver': 'GV1', 'value': 150, 'uom': 25},  # Version (uses NLS)
     ]
     
     def __init__(self, polyglot, primary, address, name):
@@ -315,26 +316,41 @@ class Controller(udi_interface.Node):
         Args:
             full_sync: If True, do a full sync including effects/palettes
         """
-        online_count = 0
-        devices_on = 0
-        
         for address, device_info in self._devices.items():
             node = device_info.get('node')
             if node:
                 try:
                     node.update_status(full_sync=full_sync)
-                    
-                    # Count online and powered-on devices
-                    if node._device and node._device.online:
-                        online_count += 1
-                        if node._device.state and node._device.state.on:
-                            devices_on += 1
                 except Exception as e:
                     LOGGER.error(f"Failed to poll device {address}: {e}")
+        
+        # Update controller stats after polling all devices
+        self.update_stats()
+    
+    def update_stats(self):
+        """
+        Update controller statistics from all devices.
+        Called after polling and when device state changes.
+        """
+        online_count = 0
+        devices_on = 0
+        total_leds = 0
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device:
+                if node._device.online:
+                    online_count += 1
+                    if node._device.state and node._device.state.on:
+                        devices_on += 1
+                # Count LEDs from device info
+                if node._device.info and node._device.info.led_count:
+                    total_leds += node._device.info.led_count
         
         # Update controller stats
         self.setDriver('GV2', online_count)
         self.setDriver('GV3', devices_on)
+        self.setDriver('GV4', total_leds)
     
     def stop(self):
         """Stop the controller node"""
@@ -594,10 +610,79 @@ class Controller(udi_interface.Node):
         except Exception as e:
             LOGGER.error(f"Failed to update preset NLS: {e}")
     
+    def cmd_all_on(self, command=None):
+        """Turn all WLED devices on"""
+        LOGGER.info("Turning ALL devices ON")
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device:
+                try:
+                    node._device.set_power(True)
+                except Exception as e:
+                    LOGGER.error(f"Failed to turn on {address}: {e}")
+        
+        # Update all device statuses and controller stats
+        self._poll_devices()
+    
+    def cmd_all_off(self, command=None):
+        """Turn all WLED devices off"""
+        LOGGER.info("Turning ALL devices OFF")
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device:
+                try:
+                    node._device.set_power(False)
+                except Exception as e:
+                    LOGGER.error(f"Failed to turn off {address}: {e}")
+        
+        # Update all device statuses and controller stats
+        self._poll_devices()
+    
+    def cmd_set_all_brightness(self, command):
+        """Set brightness on all WLED devices"""
+        brightness = int(command.get('value', 100))
+        LOGGER.info(f"Setting ALL devices brightness to {brightness}%")
+        
+        # Convert percentage to 0-255
+        bri_val = int((brightness / 100) * 255)
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device:
+                try:
+                    node._device.set_brightness(bri_val)
+                except Exception as e:
+                    LOGGER.error(f"Failed to set brightness on {address}: {e}")
+        
+        # Update all device statuses
+        self._poll_devices()
+    
+    def cmd_set_all_effect(self, command):
+        """Set effect on all WLED devices"""
+        effect_id = int(command.get('value', 0))
+        LOGGER.info(f"Setting ALL devices effect to {effect_id}")
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device:
+                try:
+                    node._device.set_effect(effect_id)
+                except Exception as e:
+                    LOGGER.error(f"Failed to set effect on {address}: {e}")
+        
+        # Update all device statuses
+        self._poll_devices()
+    
     # Command handlers
     commands = {
         'DISCOVER': discover,
         'QUERY': query,
         'REBUILD_PRESETS': rebuild_presets,
+        'ALL_ON': cmd_all_on,
+        'ALL_OFF': cmd_all_off,
+        'SET_ALL_BRI': cmd_set_all_brightness,
+        'SET_ALL_EFFECT': cmd_set_all_effect,
     }
 

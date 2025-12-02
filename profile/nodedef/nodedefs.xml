@@ -7,6 +7,7 @@
             <st id="GV0" editor="raw_count" />
             <st id="GV2" editor="raw_count" />
             <st id="GV3" editor="raw_count" />
+            <st id="GV4" editor="raw_count" />
             <st id="GV1" editor="plugin_version" />
         </sts>
         <cmds>
@@ -14,6 +15,14 @@
             <accepts>
                 <cmd id="DISCOVER" />
                 <cmd id="REBUILD_PRESETS" />
+                <cmd id="ALL_ON" />
+                <cmd id="ALL_OFF" />
+                <cmd id="SET_ALL_BRI">
+                    <p id="" editor="percent" />
+                </cmd>
+                <cmd id="SET_ALL_EFFECT">
+                    <p id="" editor="effect" />
+                </cmd>
                 <cmd id="QUERY" />
             </accepts>
         </cmds>
