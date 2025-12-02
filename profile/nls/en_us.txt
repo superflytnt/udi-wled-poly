@@ -46,7 +46,6 @@ CMD-wled_device-SET_TRANSITION-NAME = Set Transition
 CMD-wled_device-SET_LIVE-NAME = Live Override
 CMD-wled_device-NIGHTLIGHT_ON-NAME = Nightlight On
 CMD-wled_device-NIGHTLIGHT_OFF-NAME = Nightlight Off
-CMD-wled_device-SET_NIGHTLIGHT-NAME = Set NL Duration
 CMD-wled_device-SYNC_SEND-NAME = Sync Send
 CMD-wled_device-SYNC_RECEIVE-NAME = Sync Receive
 CMD-wled_device-PLAYLIST_ON-NAME = Start Playlist

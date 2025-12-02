@@ -384,15 +384,6 @@ class WLEDDevice(udi_interface.Node):
             self._device.set_state(nl={"on": False})
             self.update_status()
     
-    def cmd_set_nightlight(self, command):
-        """Set nightlight duration (minutes)"""
-        duration = int(command.get('value', 60))
-        LOGGER.info(f"Set Nightlight Duration: {self.name} to {duration} minutes")
-        
-        if self._device:
-            self._device.set_state(nl={"dur": duration})
-            self.update_status()
-    
     def cmd_sync_send(self, command):
         """Enable/disable UDP sync send"""
         value = int(command.get('value', 0))
@@ -461,7 +452,6 @@ class WLEDDevice(udi_interface.Node):
         'SET_LIVE': cmd_set_live,
         'NIGHTLIGHT_ON': cmd_nightlight_on,
         'NIGHTLIGHT_OFF': cmd_nightlight_off,
-        'SET_NIGHTLIGHT': cmd_set_nightlight,
         'SYNC_SEND': cmd_sync_send,
         'SYNC_RECEIVE': cmd_sync_receive,
         'PLAYLIST_ON': cmd_playlist_on,

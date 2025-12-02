@@ -79,12 +79,9 @@
                     <p id="" editor="bool" />
                 </cmd>
                 <cmd id="NIGHTLIGHT_ON">
-                    <p id="" editor="raw_byte" optional="true" />
+                    <p id="" editor="minutes" optional="true" />
                 </cmd>
                 <cmd id="NIGHTLIGHT_OFF" />
-                <cmd id="SET_NIGHTLIGHT">
-                    <p id="" editor="raw_byte" />
-                </cmd>
                 <cmd id="SYNC_SEND">
                     <p id="" editor="bool" />
                 </cmd>
