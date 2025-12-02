@@ -34,5 +34,10 @@
     <editor id="preset">
         <range uom="25" subset="0-250" nls="PRESET" />
     </editor>
+    
+    <!-- Sync mode selector (0=off, 1=send, 2=recv, 3=both) -->
+    <editor id="sync_mode">
+        <range uom="25" subset="0-3" nls="SYNC" />
+    </editor>
 </editors>
 

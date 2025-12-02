@@ -9,8 +9,8 @@
     {
       "title": "WLED Polyglot NodeServer",
       "author": "Seth Kaplan",
-      "version": "1.3.0",
-      "date": "2025-12-01"
+      "version": "1.4.0",
+      "date": "2025-12-02"
     }
   ],
   "docs": "https://github.com/superflytnt/udi-wled-poly",

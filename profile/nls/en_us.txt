@@ -10,7 +10,7 @@ CMD-controller-DISCOVER-NAME = Discover Devices
 CMD-controller-REBUILD_PRESETS-NAME = Rebuild Presets
 CMD-controller-QUERY-NAME = Query
 
-# WLED Device Node
+# WLED Device Node (Combined status for cleaner UI)
 ND-wled_device-NAME = WLED Device
 ND-wled_device-ICON = Lamp
 ST-wled_device-ST-NAME = Power
@@ -18,18 +18,13 @@ ST-wled_device-GV0-NAME = Brightness
 ST-wled_device-GV1-NAME = Effect
 ST-wled_device-GV2-NAME = Palette
 ST-wled_device-GV3-NAME = Preset
-ST-wled_device-GV4-NAME = Red
-ST-wled_device-GV5-NAME = Green
-ST-wled_device-GV6-NAME = Blue
-ST-wled_device-GV7-NAME = Online
-ST-wled_device-GV8-NAME = Speed
-ST-wled_device-GV9-NAME = Intensity
-ST-wled_device-GV10-NAME = Transition
-ST-wled_device-GV11-NAME = Live Override
-ST-wled_device-GV12-NAME = Nightlight
-ST-wled_device-GV13-NAME = NL Duration
-ST-wled_device-GV14-NAME = Sync Send
-ST-wled_device-GV15-NAME = Sync Receive
+ST-wled_device-GV4-NAME = Color
+ST-wled_device-GV5-NAME = Online
+ST-wled_device-GV6-NAME = FX Settings
+ST-wled_device-GV7-NAME = Transition
+ST-wled_device-GV8-NAME = Live Override
+ST-wled_device-GV9-NAME = Nightlight
+ST-wled_device-GV10-NAME = Sync
 CMD-wled_device-DON-NAME = On
 CMD-wled_device-DOF-NAME = Off
 CMD-wled_device-DFON-NAME = Fast On
@@ -78,6 +73,12 @@ CMD-wled_segment-QUERY-NAME = Query
 # Boolean values
 BOOL-0 = Off
 BOOL-1 = On
+
+# Sync mode values (combined send/receive)
+SYNC-0 = Off
+SYNC-1 = Send Only
+SYNC-2 = Recv Only
+SYNC-3 = Send+Recv
 
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid
