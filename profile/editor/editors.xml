@@ -40,9 +40,9 @@
         <range uom="25" subset="0,15,30,45,60,90,120" nls="NLTIME" />
     </editor>
     
-    <!-- Sync mode selector (0=off, 1=send, 2=recv, 3=both) -->
+    <!-- Sync mode selector (0=off, 1=send) - recv not supported by WLED API -->
     <editor id="sync_mode">
-        <range uom="25" subset="0-3" nls="SYNC" />
+        <range uom="25" subset="0-1" nls="SYNC" />
     </editor>
     
     <!-- Plugin version display -->

@@ -76,11 +76,9 @@ CMD-wled_segment-QUERY-NAME = Query
 BOOL-0 = Off
 BOOL-1 = On
 
-# Sync mode values (combined send/receive)
+# Sync mode values (recv not supported by WLED API)
 SYNC-0 = Off
-SYNC-1 = Send Only
-SYNC-2 = Recv Only
-SYNC-3 = Send+Recv
+SYNC-1 = Send
 
 # Nightlight duration options
 NLTIME-0 = Off
