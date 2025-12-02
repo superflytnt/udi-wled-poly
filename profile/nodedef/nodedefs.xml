@@ -5,6 +5,7 @@
         <sts>
             <st id="ST" editor="bool" />
             <st id="GV0" editor="raw_count" />
+            <st id="GV1" editor="plugin_version" />
         </sts>
         <cmds>
             <sends />

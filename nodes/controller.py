@@ -23,10 +23,14 @@ class Controller(udi_interface.Node):
     
     id = 'controller'
     
+    # Plugin version (major*100 + minor*10 + patch)
+    VERSION = 145  # v1.4.5
+    
     # Node drivers (status values)
     drivers = [
         {'driver': 'ST', 'value': 1, 'uom': 2},      # Status (On/Off)
         {'driver': 'GV0', 'value': 0, 'uom': 56},    # Device Count
+        {'driver': 'GV1', 'value': 145, 'uom': 25},  # Version (uses NLS)
     ]
     
     def __init__(self, polyglot, primary, address, name):
@@ -75,8 +79,9 @@ class Controller(udi_interface.Node):
         from lib.wled_api import WLEDApi
         self._wled_api = WLEDApi()
         
-        # Set online
+        # Set online and version
         self.setDriver('ST', 1)
+        self.setDriver('GV1', self.VERSION)
         
         # Load configuration and add configured devices
         self._load_config()
@@ -121,7 +126,7 @@ class Controller(udi_interface.Node):
         """Set configuration documentation - displays in PG3 Configuration tab"""
         html = '''
 <h2>WLED Polyglot v3 NodeServer</h2>
-<p style="color: #888;">Version 1.4.4</p>
+<p style="color: #888;">Version 1.4.5</p>
 
 <br>
 

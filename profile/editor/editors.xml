@@ -44,5 +44,10 @@
     <editor id="sync_mode">
         <range uom="25" subset="0-3" nls="SYNC" />
     </editor>
+    
+    <!-- Plugin version display -->
+    <editor id="plugin_version">
+        <range uom="25" subset="100-199" nls="VER" />
+    </editor>
 </editors>
 

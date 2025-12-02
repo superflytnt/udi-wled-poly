@@ -6,6 +6,7 @@ ND-controller-NAME = WLED Controller
 ND-controller-ICON = GenericCtl
 ST-controller-ST-NAME = Status
 ST-controller-GV0-NAME = Device Count
+ST-controller-GV1-NAME = Version
 CMD-controller-DISCOVER-NAME = Discover Devices
 CMD-controller-REBUILD_PRESETS-NAME = Rebuild Presets
 CMD-controller-QUERY-NAME = Query
@@ -90,6 +91,14 @@ NLTIME-45 = 45 min
 NLTIME-60 = 60 min
 NLTIME-90 = 90 min
 NLTIME-120 = 120 min
+
+# Plugin version display
+VER-140 = v1.4.0
+VER-141 = v1.4.1
+VER-142 = v1.4.2
+VER-143 = v1.4.3
+VER-144 = v1.4.4
+VER-145 = v1.4.5
 
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid
