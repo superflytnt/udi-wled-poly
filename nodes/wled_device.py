@@ -394,6 +394,7 @@ class WLEDDevice(udi_interface.Node):
     
     def cmd_set_sync(self, command):
         """Set UDP sync mode: 0=off, 1=send only, 2=recv only, 3=both"""
+        import time
         value = int(command.get('value', 0))
         
         # Decode sync mode to send/recv flags
@@ -405,6 +406,7 @@ class WLEDDevice(udi_interface.Node):
         
         if self._device:
             self._device.set_state(udpn={"send": send, "recv": recv})
+            time.sleep(0.2)  # Wait for WLED to apply
             self.update_status()
     
     def cmd_save_preset(self, command):
