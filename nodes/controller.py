@@ -24,13 +24,15 @@ class Controller(udi_interface.Node):
     id = 'controller'
     
     # Plugin version (major*100 + minor*10 + patch)
-    VERSION = 148  # v1.4.8
+    VERSION = 149  # v1.4.9
     
     # Node drivers (status values)
     drivers = [
         {'driver': 'ST', 'value': 1, 'uom': 2},      # Status (On/Off)
         {'driver': 'GV0', 'value': 0, 'uom': 56},    # Device Count
-        {'driver': 'GV1', 'value': 145, 'uom': 25},  # Version (uses NLS)
+        {'driver': 'GV1', 'value': 149, 'uom': 25},  # Version (uses NLS)
+        {'driver': 'GV2', 'value': 0, 'uom': 56},    # Online Count
+        {'driver': 'GV3', 'value': 0, 'uom': 56},    # Devices On (powered on)
     ]
     
     def __init__(self, polyglot, primary, address, name):
@@ -313,13 +315,26 @@ class Controller(udi_interface.Node):
         Args:
             full_sync: If True, do a full sync including effects/palettes
         """
+        online_count = 0
+        devices_on = 0
+        
         for address, device_info in self._devices.items():
             node = device_info.get('node')
             if node:
                 try:
                     node.update_status(full_sync=full_sync)
+                    
+                    # Count online and powered-on devices
+                    if node._device and node._device.online:
+                        online_count += 1
+                        if node._device.state and node._device.state.on:
+                            devices_on += 1
                 except Exception as e:
                     LOGGER.error(f"Failed to poll device {address}: {e}")
+        
+        # Update controller stats
+        self.setDriver('GV2', online_count)
+        self.setDriver('GV3', devices_on)
     
     def stop(self):
         """Stop the controller node"""

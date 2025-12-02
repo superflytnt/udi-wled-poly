@@ -5,7 +5,9 @@
 ND-controller-NAME = WLED Controller
 ND-controller-ICON = GenericCtl
 ST-controller-ST-NAME = Status
-ST-controller-GV0-NAME = Device Count
+ST-controller-GV0-NAME = Devices
+ST-controller-GV2-NAME = Online
+ST-controller-GV3-NAME = On
 ST-controller-GV1-NAME = Version
 CMD-controller-DISCOVER-NAME = Discover Devices
 CMD-controller-REBUILD_PRESETS-NAME = Rebuild Presets
@@ -98,6 +100,7 @@ VER-145 = v1.4.5
 VER-146 = v1.4.6
 VER-147 = v1.4.7
 VER-148 = v1.4.8
+VER-149 = v1.4.9
 
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid
