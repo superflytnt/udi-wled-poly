@@ -1,6 +1,6 @@
 # WLED Polyglot v3 NodeServer
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full control of WLED LED controllers.
@@ -11,7 +11,8 @@ A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full
 - **Multi-device support** — Control unlimited WLED devices from a single nodeserver
 - **Auto-Discovery** — Parallel network scan finds all WLED devices in seconds
 - **Manual Configuration** — Add devices by name and IP address
-- **Real-time Status** — See power, brightness, effect, palette, and preset status
+- **Real-time Status** — See power, brightness, effect, palette, preset, and more
+- **Controller Dashboard** — View online count, devices on, and total LED count
 
 ### WLED Control
 | Feature | Description |
@@ -20,15 +21,28 @@ A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full
 | Brightness | 0-100% dimming |
 | Effects | 180+ effects with type indicators (1D/2D, Palette, Audio) |
 | Palettes | 70+ color palettes |
-| Presets | Load saved presets (names auto-populated from devices) |
+| Presets | Load and save presets (names auto-populated from devices) |
 | Color | RGB color control |
 | Speed | Effect animation speed |
 | Intensity | Effect intensity/size |
+| Transition | Fade time between states |
+| Nightlight | Auto-dim timer with preset durations (auto-turns on device) |
+| Sync | UDP sync between WLED devices (send mode) |
+| Live Override | Enable/disable external UDP control |
+
+### Global Commands
+| Command | Description |
+|---------|-------------|
+| All On | Turn on all WLED devices |
+| All Off | Turn off all WLED devices |
+| Set All Brightness | Set brightness for all devices |
+| Set All Effect | Apply same effect to all devices |
 
 ### ISY Integration
 - Full status display in ISY Admin Console and eisy-ui
 - Works with ISY programs, scenes, and schedules
 - Effect/Palette/Preset dropdowns show names, not just numbers
+- Plugin version displayed on Controller node
 
 ## Requirements
 
@@ -38,7 +52,12 @@ A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full
 
 ## Installation
 
-### From Local (Developer Mode)
+### From Polyglot Store (Recommended)
+1. In PG3, go to the NodeServer Store
+2. Search for "WLED"
+3. Click Install
+
+### From GitHub (Developer Mode)
 1. SSH to your eISY/Polisy
 2. Clone repository:
    ```bash
@@ -46,15 +65,10 @@ A Polyglot v3 (PG3) NodeServer for Universal Devices ISY/eISY that provides full
    ```
 3. In PG3, add as Local plugin pointing to `/home/admin/WLED-Improved`
 
-### Manual Installation
-1. Clone this repository to your PG3 nodeserver directory
-2. Run `./install.sh` to install dependencies
-3. Add as Local plugin in PG3
-
 ## Configuration
 
 ### Auto-Discovery (Recommended)
-1. Click the **Discover** button in PG3
+1. Click the **Discover Devices** button in PG3
 2. All WLED devices on your network will be found and added automatically
 
 ### Manual Configuration
@@ -71,8 +85,12 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 ### Controller Node
 | Command | Description |
 |---------|-------------|
-| Discover | Scan network for WLED devices |
-| Rebuild Presets | Refresh preset/effect names from devices |
+| Discover Devices | Scan network for WLED devices |
+| Rebuild Presets | Refresh preset/effect names from all devices |
+| All On | Turn on all devices |
+| All Off | Turn off all devices |
+| Set All Brightness | Set brightness for all devices (0-100%) |
+| Set All Effect | Apply effect to all devices |
 | Query | Update all device status |
 
 ### WLED Device Node
@@ -81,18 +99,36 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 | On | Turn on (optionally with brightness %) |
 | Off | Turn off |
 | Fast On/Off | Instant on/off (no transition) |
+| Brighten/Dim | Increase/decrease brightness by 10% |
 | Set Brightness | Set brightness 0-100% |
 | Set Effect | Select from 180+ effects |
 | Set Palette | Select from 70+ palettes |
 | Set Color | Set RGB color |
 | Load Preset | Load a saved preset |
+| Save Preset | Save current state to a preset slot |
 | Set Speed | Effect animation speed (0-100%) |
 | Set Intensity | Effect intensity/size (0-100%) |
 | Set Transition | Fade time in 100ms units (0-255) |
+| Nightlight | Set auto-dim timer (Off, 15, 30, 45, 60, 90, 120 min) |
+| Sync | UDP sync mode (Off, Send) |
 | Live Override | Enable/disable external UDP control |
+| Start/Stop Playlist | Control WLED playlists |
+| Rebuild Presets | Refresh presets from this device |
+| Query | Update device status |
 
 ## Status Values
 
+### Controller Node
+| Status | Description |
+|--------|-------------|
+| ST | Status (On/Off) |
+| GV0 | Device Count |
+| GV1 | Plugin Version |
+| GV2 | Online Count |
+| GV3 | Devices On |
+| GV4 | Total LEDs |
+
+### WLED Device Node
 | Status | Description |
 |--------|-------------|
 | ST | Power (On/Off) |
@@ -100,12 +136,14 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 | GV1 | Current Effect |
 | GV2 | Current Palette |
 | GV3 | Current Preset |
-| GV4-GV6 | RGB Color values |
+| GV4-GV6 | RGB Color values (Red, Green, Blue) |
 | GV7 | Online status |
 | GV8 | Speed (0-100%) |
 | GV9 | Intensity (0-100%) |
 | GV10 | Transition (100ms units) |
 | GV11 | Live Override active |
+| GV12 | Nightlight (Off or duration in minutes) |
+| GV13 | Sync (Off or Send) |
 
 ## Troubleshooting
 
@@ -124,37 +162,77 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 - Click "Load Profile" in PG3
 - Restart ISY Admin Console
 
+### Sync Receive Not Working
+- This is a known limitation in WLED firmware (v0.15.2)
+- The WLED JSON API does not save the receive setting
+- Only Send mode is supported
+
 ## Version History
 
+### v1.5.1 (2025-12-02)
+- Auto-rebuild effect metadata on startup (survives git pulls)
+- Fixed palette detection in effect metadata
+
+### v1.5.0 (2025-12-02)
+- Added global commands: All On, All Off, Set All Brightness, Set All Effect
+- Added Controller stats: Online Count, Devices On, Total LEDs
+- Controller stats update instantly when device power changes
+
+### v1.4.9 (2025-12-02)
+- Added Online Count and Devices On stats to Controller
+- Moved Online status to prominent position on device nodes
+
+### v1.4.8 (2025-12-02)
+- Optimized discovery: mDNS primary + improved HTTP probe
+- Added retry logic for missed devices
+- Detailed discovery logging
+
+### v1.4.7 (2025-12-02)
+- Added per-device Rebuild Presets button
+- Removed redundant Nightlight On/Off buttons
+
+### v1.4.6 (2025-12-01)
+- Combined Sync Send/Receive into single Sync command
+- Simplified to Off/Send due to WLED API limitation
+
+### v1.4.5 (2025-12-01)
+- Added plugin version display to Controller node
+
+### v1.4.4 (2025-12-01)
+- Nightlight auto-turns on device when timer is set
+- Renamed command to "Nightlight"
+
+### v1.4.3 (2025-12-01)
+- Added Nightlight dropdown with preset durations
+- Setting to 0/Off turns nightlight off
+
+### v1.4.2 (2025-12-01)
+- Removed redundant Set NL Duration command
+
+### v1.4.1 (2025-12-01)
+- Fixed display issues with combined status cells
+- Reverted RGB and Speed/Intensity to separate cells
+- Fixed Nightlight and Sync display with correct UOMs
+
+### v1.4.0 (2025-12-01)
+- Attempted combined status cells (partially reverted)
+
 ### v1.3.0 (2025-12-01)
-- Added Save Preset command (save current state to a preset slot)
-- Added Playlist controls (Start/Stop playlist)
-- Added Nightlight mode (auto-dim timer with duration control)
-- Added Sync Send/Receive controls (UDP sync between devices)
-- New status displays: Nightlight, Nightlight Duration, Sync Send, Sync Receive
-- Preset loading now updates all status values (effect, speed, intensity, etc.)
+- Added Save Preset, Playlists, Nightlight, and Sync controls
+- Preset loading updates all status values
 
 ### v1.2.0 (2025-12-01)
-- Added Speed control (effect animation speed)
-- Added Intensity control (effect size/intensity)
-- Added Transition Time control (fade duration)
-- Added Live Override control (enable/disable external UDP control)
-- New status displays: Speed, Intensity, Transition, Live Override
-- Real-time segment data display
+- Added Speed, Intensity, Transition, and Live Override controls
 
 ### v1.1.0 (2025-12-01)
-- Added effect metadata (1D/2D, Palette, Volume, Frequency indicators)
-- Added parallel auto-discovery (scans network in ~5 seconds)
-- Added Rebuild Presets command
-- Improved notices with discovery results
-- Better configuration documentation
-- Fixed Discover button in PG3
+- Added effect metadata (1D/2D, Palette, Volume, Frequency)
+- Added parallel auto-discovery
+- Improved configuration documentation
 
 ### v1.0.0 (2025-12-01)
 - Initial release
 - Basic WLED control (power, brightness, effects, palettes, presets, color)
 - Auto-discovery and manual configuration
-- Multi-device support
 
 ## Links
 
@@ -162,6 +240,7 @@ Format: `name1:ip1,name2:ip2,name3:ip3`
 - **Report Issues:** https://github.com/superflytnt/udi-wled-poly/issues
 - **WLED Project:** https://kno.wled.ge/
 - **Universal Devices:** https://www.universal-devices.com/
+- **UDI Forum:** https://forum.universal-devices.com/
 
 ## License
 
