@@ -13,6 +13,8 @@
         <cmds>
             <sends />
             <accepts>
+                <cmd id="DON" />
+                <cmd id="DOF" />
                 <cmd id="DISCOVER" />
                 <cmd id="REBUILD_PRESETS" />
                 <cmd id="ALL_ON" />
