@@ -208,7 +208,8 @@ This is a limitation in WLED firmware (tested on v0.15.2). The WLED JSON API doe
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **1.5.3** | 2025-12-03 | Scene support: Controller responds to DON/DOF for use as scene responder |
+| **1.5.4** | 2025-12-03 | Controller status: Avg Brightness & Effect display, cleaned up redundant commands |
+| **1.5.3** | 2025-12-03 | Scene support: Controller responds to On/Off/Brighten/Dim for use as scene responder |
 | **1.5.2** | 2025-12-03 | Generic preset IDs (per-device presets), removed Save Preset, reordered status fields |
 | **1.5.1** | 2025-12-02 | Effect metadata auto-rebuilds on startup |
 | **1.5.0** | 2025-12-02 | Global commands (All On/Off, Set All), Controller stats |
