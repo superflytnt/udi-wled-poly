@@ -451,11 +451,12 @@ class WLEDDevice(udi_interface.Node):
     
     def cmd_rebuild_presets(self, command=None):
         """
-        Rebuild presets from this device.
-        Fetches presets and updates the NLS file with preset names.
+        Fetch and log presets from this device.
+        
+        Each WLED device has unique presets. This command logs them for reference.
+        The ISY dropdown shows generic preset IDs since preset names vary per device.
         """
-        import os
-        LOGGER.info(f"Rebuilding presets from {self.name}...")
+        LOGGER.info(f"Fetching presets from {self.name}...")
         
         if not self._device:
             LOGGER.warning(f"No device connection for {self.name}")
@@ -464,78 +465,14 @@ class WLEDDevice(udi_interface.Node):
         try:
             presets = self._device.get_presets()
             if presets:
-                LOGGER.info(f"{self.name}: Found {len(presets)} presets")
                 self._available_presets = presets
-                
-                # Update the NLS file with preset names
-                self._update_preset_nls(presets)
-                
-                # Reload profile to apply changes
-                LOGGER.info("Reloading profile to apply preset changes...")
-                self.poly.updateProfile()
+                LOGGER.info(f"{self.name} presets ({len(presets)} total):")
+                for preset_id in sorted(presets.keys()):
+                    LOGGER.info(f"  {preset_id}: {presets[preset_id]}")
             else:
                 LOGGER.warning(f"{self.name}: No presets found")
         except Exception as e:
-            LOGGER.error(f"Failed to rebuild presets from {self.name}: {e}")
-    
-    def _update_preset_nls(self, presets: dict):
-        """
-        Update NLS file with preset names from this device.
-        Merges with existing presets from other devices.
-        
-        Args:
-            presets: Dict mapping preset ID to preset name
-        """
-        import os
-        
-        try:
-            # Get the profile directory
-            profile_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'profile', 'nls')
-            nls_file = os.path.join(profile_dir, 'en_us.txt')
-            
-            # Read existing NLS content
-            existing_lines = []
-            existing_presets = {}
-            
-            if os.path.exists(nls_file):
-                with open(nls_file, 'r') as f:
-                    existing_lines = f.readlines()
-                
-                # Extract existing preset entries
-                for line in existing_lines:
-                    if line.startswith('PRESET-') and '=' in line:
-                        try:
-                            key, value = line.split('=', 1)
-                            preset_id = int(key.replace('PRESET-', '').strip())
-                            existing_presets[preset_id] = value.strip()
-                        except (ValueError, IndexError):
-                            pass
-            
-            # Merge new presets with existing (new ones take priority)
-            for preset_id, preset_name in presets.items():
-                safe_name = preset_name.replace('"', "'").replace('\n', ' ')
-                existing_presets[preset_id] = f"{preset_id}: {safe_name}"
-            
-            # Remove old preset lines
-            filtered_lines = [line for line in existing_lines 
-                             if not line.startswith('PRESET-') 
-                             and 'WLED Presets' not in line
-                             and 'Preset Names' not in line]
-            
-            # Add updated preset entries
-            preset_lines = ["\n# Preset Names (from WLED devices)\n"]
-            for preset_id in sorted(existing_presets.keys()):
-                preset_lines.append(f"PRESET-{preset_id} = {existing_presets[preset_id]}\n")
-            
-            # Write updated NLS file
-            with open(nls_file, 'w') as f:
-                f.writelines(filtered_lines)
-                f.writelines(preset_lines)
-            
-            LOGGER.info(f"Updated NLS file with {len(existing_presets)} preset names")
-            
-        except Exception as e:
-            LOGGER.error(f"Failed to update preset NLS: {e}")
+            LOGGER.error(f"Failed to fetch presets from {self.name}: {e}")
     
     # Command handlers
     commands = {

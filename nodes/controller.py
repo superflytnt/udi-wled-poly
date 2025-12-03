@@ -429,39 +429,27 @@ class Controller(udi_interface.Node):
     
     def rebuild_presets(self, command=None):
         """
-        Rebuild presets from all WLED devices.
+        Fetch and log presets from all WLED devices.
         
-        Each device fetches and stores its own presets (device-specific).
-        The NLS file is updated with merged presets for ISY display.
+        Each device has its own presets - this command logs them for reference.
+        The ISY dropdown shows generic preset IDs (1-250) since each device
+        has different preset names for the same ID.
         """
-        LOGGER.info("Rebuilding presets from all WLED devices...")
+        LOGGER.info("Fetching presets from all WLED devices...")
+        LOGGER.info("Note: Each device has unique presets. Check WLED web UI for preset names.")
         
-        all_presets = {}
-        
-        # Have each device fetch its own presets (stored in device's _available_presets)
+        # Have each device fetch and log its own presets
         for address, device_info in self._devices.items():
             node = device_info.get('node')
             if node:
                 try:
-                    # Fetch device-specific presets (stored in node._available_presets)
                     node._fetch_presets()
-                    
-                    # Collect for NLS merge (UI display shows union of all presets)
                     if node._available_presets:
-                        LOGGER.info(f"Device {address}: Found {len(node._available_presets)} presets")
-                        for preset_id, preset_name in node._available_presets.items():
-                            if preset_id not in all_presets:
-                                all_presets[preset_id] = preset_name
+                        LOGGER.info(f"Device {address} presets:")
+                        for preset_id in sorted(node._available_presets.keys()):
+                            LOGGER.info(f"  {preset_id}: {node._available_presets[preset_id]}")
                 except Exception as e:
                     LOGGER.warning(f"Failed to get presets from {address}: {e}")
-        
-        if all_presets:
-            LOGGER.info(f"Total unique presets for NLS: {len(all_presets)}")
-            self._update_preset_nls(all_presets)
-            # Note: Each device keeps its own presets in _available_presets
-            # The NLS file contains merged presets for UI dropdown display
-        else:
-            LOGGER.warning("No presets found on any device")
         
         # Also rebuild effects with metadata
         self._rebuild_effects_nls()
@@ -559,54 +547,6 @@ class Controller(udi_interface.Node):
         except Exception as e:
             LOGGER.error(f"Failed to update effect NLS: {e}")
     
-    def _update_preset_nls(self, presets: Dict[int, str]):
-        """
-        Update NLS file with preset names.
-        
-        Args:
-            presets: Dict mapping preset ID to preset name
-        """
-        import os
-        
-        try:
-            # Get the profile directory
-            profile_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'profile', 'nls')
-            nls_file = os.path.join(profile_dir, 'en_us.txt')
-            
-            # Read existing NLS content
-            existing_lines = []
-            if os.path.exists(nls_file):
-                with open(nls_file, 'r') as f:
-                    existing_lines = f.readlines()
-            
-            # Remove old auto-generated preset entries (keep default ones)
-            filtered_lines = [line for line in existing_lines 
-                             if not (line.startswith('PRESET-') and 'auto-generated' not in line 
-                                    and any(c.isdigit() for c in line.split('=')[0] if '=' in line))]
-            # Also remove the auto-generated header
-            filtered_lines = [line for line in filtered_lines if 'WLED Presets (auto-generated)' not in line]
-            
-            # Add new preset entries with "ID: Name" format
-            preset_lines = ["\n# WLED Presets (auto-generated from devices)\n"]
-            for preset_id in sorted(presets.keys()):
-                preset_name = presets[preset_id]
-                # Sanitize preset name for NLS and add number prefix
-                safe_name = preset_name.replace('"', "'").replace('\n', ' ')
-                preset_lines.append(f"PRESET-{preset_id} = {preset_id}: {safe_name}\n")
-            
-            # Write updated NLS file
-            with open(nls_file, 'w') as f:
-                f.writelines(filtered_lines)
-                f.writelines(preset_lines)
-            
-            LOGGER.info(f"Updated NLS file with {len(presets)} preset names")
-            
-            # Reload profile to apply changes
-            LOGGER.info("Reloading profile to apply preset changes...")
-            self.poly.updateProfile()
-            
-        except Exception as e:
-            LOGGER.error(f"Failed to update preset NLS: {e}")
     
     def cmd_all_on(self, command=None):
         """Turn all WLED devices on"""
