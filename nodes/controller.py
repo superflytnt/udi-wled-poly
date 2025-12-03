@@ -661,11 +661,9 @@ class Controller(udi_interface.Node):
         'DISCOVER': discover,
         'QUERY': query,
         'REBUILD_PRESETS': rebuild_presets,
-        'ALL_ON': cmd_all_on,
-        'ALL_OFF': cmd_all_off,
         'SET_ALL_BRI': cmd_set_all_brightness,
         'SET_ALL_EFFECT': cmd_set_all_effect,
-        # Scene support: DON/DOF/DFON/DFOF/BRT/DIM for scene responder functionality
+        # Standard on/off/dim commands (work with scenes)
         'DON': cmd_all_on,
         'DOF': cmd_all_off,
         'DFON': cmd_all_on,

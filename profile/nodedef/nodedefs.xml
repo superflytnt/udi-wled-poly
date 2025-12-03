@@ -23,8 +23,6 @@
                 <cmd id="DIM" />
                 <cmd id="DISCOVER" />
                 <cmd id="REBUILD_PRESETS" />
-                <cmd id="ALL_ON" />
-                <cmd id="ALL_OFF" />
                 <cmd id="SET_ALL_BRI">
                     <p id="" editor="percent" />
                 </cmd>
