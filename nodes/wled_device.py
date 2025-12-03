@@ -324,6 +324,78 @@ class WLEDDevice(udi_interface.Node):
             time.sleep(0.3)
             self.update_status(full_sync=True)  # Full sync to get all values
     
+    def cmd_next_preset(self, command=None):
+        """Load the next preset in sequence"""
+        import time
+        
+        if not self._device or not self._device.state:
+            LOGGER.warning(f"{self.name}: Cannot get next preset - device not ready")
+            return
+        
+        # Get current preset
+        current = self._device.state.preset if self._device.state.preset >= 0 else 0
+        
+        # Get sorted list of available preset IDs
+        if not self._available_presets:
+            self._fetch_presets()
+        
+        preset_ids = sorted(self._available_presets.keys()) if self._available_presets else []
+        
+        if not preset_ids:
+            LOGGER.warning(f"{self.name}: No presets available")
+            return
+        
+        # Find next preset
+        next_preset = preset_ids[0]  # Default to first
+        for pid in preset_ids:
+            if pid > current:
+                next_preset = pid
+                break
+        else:
+            # Wrap around to first preset
+            next_preset = preset_ids[0]
+        
+        LOGGER.info(f"Next Preset: {self.name} {current} -> {next_preset}")
+        self._device.set_preset(next_preset)
+        time.sleep(0.3)
+        self.update_status(full_sync=True)
+    
+    def cmd_prev_preset(self, command=None):
+        """Load the previous preset in sequence"""
+        import time
+        
+        if not self._device or not self._device.state:
+            LOGGER.warning(f"{self.name}: Cannot get previous preset - device not ready")
+            return
+        
+        # Get current preset
+        current = self._device.state.preset if self._device.state.preset >= 0 else 0
+        
+        # Get sorted list of available preset IDs
+        if not self._available_presets:
+            self._fetch_presets()
+        
+        preset_ids = sorted(self._available_presets.keys()) if self._available_presets else []
+        
+        if not preset_ids:
+            LOGGER.warning(f"{self.name}: No presets available")
+            return
+        
+        # Find previous preset
+        prev_preset = preset_ids[-1]  # Default to last
+        for pid in reversed(preset_ids):
+            if pid < current:
+                prev_preset = pid
+                break
+        else:
+            # Wrap around to last preset
+            prev_preset = preset_ids[-1]
+        
+        LOGGER.info(f"Prev Preset: {self.name} {current} -> {prev_preset}")
+        self._device.set_preset(prev_preset)
+        time.sleep(0.3)
+        self.update_status(full_sync=True)
+    
     def cmd_set_color(self, command):
         """Set RGB color"""
         r = int(command.get('R.uom56', command.get('R', 255)))
@@ -475,6 +547,8 @@ class WLEDDevice(udi_interface.Node):
         'SET_EFFECT': cmd_set_effect,
         'SET_PALETTE': cmd_set_palette,
         'SET_PRESET': cmd_set_preset,
+        'NEXT_PRESET': cmd_next_preset,
+        'PREV_PRESET': cmd_prev_preset,
         'SET_COLOR': cmd_set_color,
         'SET_SPEED': cmd_set_speed,
         'SET_INTENSITY': cmd_set_intensity,

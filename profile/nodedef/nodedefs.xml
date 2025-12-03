@@ -78,6 +78,8 @@
                 <cmd id="SET_PRESET">
                     <p id="" editor="preset" />
                 </cmd>
+                <cmd id="NEXT_PRESET" />
+                <cmd id="PREV_PRESET" />
                 <cmd id="SET_COLOR">
                     <p id="R" editor="raw_byte" />
                     <p id="G" editor="raw_byte" />

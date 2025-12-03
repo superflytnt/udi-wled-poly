@@ -1,6 +1,6 @@
 # WLED Polyglot v3 NodeServer
 
-[![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.5.5-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![WLED](https://img.shields.io/badge/WLED-v0.13+-orange.svg)](https://kno.wled.ge/)
 
@@ -147,6 +147,7 @@ Each WLED device appears as its own node with full control:
 - **Set Effect** — Choose from 180+ effects
 - **Set Palette** — Choose color palette for effects
 - **Load Preset** — Load a saved configuration
+- **Next Preset / Prev Preset** — Cycle through presets (great for scenes!)
 - **Set Color** — Set RGB color values
 - **Set Speed / Intensity** — Adjust effect parameters
 - **Nightlight** — Set auto-dim timer (turns on device automatically)
@@ -232,6 +233,7 @@ The WLED JSON API's `psave` command for saving presets doesn't work reliably acr
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **1.5.5** | 2025-12-03 | Next/Prev Preset commands for cycling through presets via scenes |
 | **1.5.4** | 2025-12-03 | Controller status: Avg Brightness & Effect display, cleaned up redundant commands |
 | **1.5.3** | 2025-12-03 | Scene support: Controller responds to On/Off/Brighten/Dim for use as scene responder |
 | **1.5.2** | 2025-12-03 | Generic preset IDs (per-device presets), removed Save Preset, reordered status fields |
