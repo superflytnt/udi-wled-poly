@@ -13,10 +13,14 @@
         <cmds>
             <sends />
             <accepts>
-                <cmd id="DON" />
+                <cmd id="DON">
+                    <p id="" editor="percent" optional="true" />
+                </cmd>
                 <cmd id="DOF" />
                 <cmd id="DFON" />
                 <cmd id="DFOF" />
+                <cmd id="BRT" />
+                <cmd id="DIM" />
                 <cmd id="DISCOVER" />
                 <cmd id="REBUILD_PRESETS" />
                 <cmd id="ALL_ON" />

@@ -549,18 +549,61 @@ class Controller(udi_interface.Node):
     
     
     def cmd_all_on(self, command=None):
-        """Turn all WLED devices on"""
-        LOGGER.info("Turning ALL devices ON")
+        """Turn all WLED devices on, optionally with brightness level"""
+        # Check for brightness parameter (from scene or DON with level)
+        brightness = None
+        if command and 'value' in command:
+            brightness = int(command['value'])
+            LOGGER.info(f"Turning ALL devices ON at {brightness}%")
+        else:
+            LOGGER.info("Turning ALL devices ON")
         
         for address, device_info in self._devices.items():
             node = device_info.get('node')
             if node and node._device:
                 try:
                     node._device.set_power(True)
+                    if brightness is not None:
+                        bri_val = int((brightness / 100) * 255)
+                        node._device.set_brightness(bri_val)
                 except Exception as e:
                     LOGGER.error(f"Failed to turn on {address}: {e}")
         
         # Update all device statuses and controller stats
+        self._poll_devices()
+    
+    def cmd_all_brighten(self, command=None):
+        """Brighten all WLED devices by ~10%"""
+        LOGGER.info("Brightening ALL devices")
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device and node._device.state:
+                try:
+                    current = node._device.state.brightness
+                    new_bri = min(255, current + 25)  # +10% roughly
+                    node._device.set_brightness(new_bri)
+                except Exception as e:
+                    LOGGER.error(f"Failed to brighten {address}: {e}")
+        
+        # Update all device statuses
+        self._poll_devices()
+    
+    def cmd_all_dim(self, command=None):
+        """Dim all WLED devices by ~10%"""
+        LOGGER.info("Dimming ALL devices")
+        
+        for address, device_info in self._devices.items():
+            node = device_info.get('node')
+            if node and node._device and node._device.state:
+                try:
+                    current = node._device.state.brightness
+                    new_bri = max(0, current - 25)  # -10% roughly
+                    node._device.set_brightness(new_bri)
+                except Exception as e:
+                    LOGGER.error(f"Failed to dim {address}: {e}")
+        
+        # Update all device statuses
         self._poll_devices()
     
     def cmd_all_off(self, command=None):
@@ -622,10 +665,12 @@ class Controller(udi_interface.Node):
         'ALL_OFF': cmd_all_off,
         'SET_ALL_BRI': cmd_set_all_brightness,
         'SET_ALL_EFFECT': cmd_set_all_effect,
-        # Scene support: DON/DOF/DFON/DFOF map to ALL_ON/ALL_OFF for scene responder functionality
+        # Scene support: DON/DOF/DFON/DFOF/BRT/DIM for scene responder functionality
         'DON': cmd_all_on,
         'DOF': cmd_all_off,
         'DFON': cmd_all_on,
         'DFOF': cmd_all_off,
+        'BRT': cmd_all_brighten,
+        'DIM': cmd_all_dim,
     }
 
