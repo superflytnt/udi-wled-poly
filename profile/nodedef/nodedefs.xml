@@ -34,9 +34,9 @@
             <st id="ST" editor="bool" />
             <st id="GV7" editor="bool" />
             <st id="GV0" editor="percent" />
+            <st id="GV3" editor="preset" />
             <st id="GV1" editor="effect" />
             <st id="GV2" editor="palette" />
-            <st id="GV3" editor="preset" />
             <st id="GV4" editor="raw_byte" />
             <st id="GV5" editor="raw_byte" />
             <st id="GV6" editor="raw_byte" />
