@@ -8,6 +8,8 @@
             <st id="GV2" editor="raw_count" />
             <st id="GV3" editor="raw_count" />
             <st id="GV4" editor="raw_count" />
+            <st id="GV5" editor="percent" />
+            <st id="GV6" editor="effect" />
             <st id="GV1" editor="plugin_version" />
         </sts>
         <cmds>

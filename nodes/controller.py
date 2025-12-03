@@ -33,6 +33,8 @@ class Controller(udi_interface.Node):
         {'driver': 'GV2', 'value': 0, 'uom': 56},    # Online Count
         {'driver': 'GV3', 'value': 0, 'uom': 56},    # Devices On (powered on)
         {'driver': 'GV4', 'value': 0, 'uom': 56},    # Total LEDs
+        {'driver': 'GV5', 'value': 0, 'uom': 51},    # Average Brightness (percent)
+        {'driver': 'GV6', 'value': 0, 'uom': 25},    # Last Effect (uses NLS)
         {'driver': 'GV1', 'value': 150, 'uom': 25},  # Version (uses NLS)
     ]
     
@@ -56,6 +58,7 @@ class Controller(udi_interface.Node):
         # Managed devices
         self._devices: Dict[str, Any] = {}
         self._wled_api = None
+        self._last_effect = 0  # Track last effect set via "All Effect"
         
         # Configuration
         self._config_done = False
@@ -335,6 +338,8 @@ class Controller(udi_interface.Node):
         online_count = 0
         devices_on = 0
         total_leds = 0
+        total_brightness = 0
+        brightness_count = 0
         
         for address, device_info in self._devices.items():
             node = device_info.get('node')
@@ -343,14 +348,27 @@ class Controller(udi_interface.Node):
                     online_count += 1
                     if node._device.state and node._device.state.on:
                         devices_on += 1
+                    # Track brightness for average calculation
+                    if node._device.state:
+                        # Convert 0-255 to 0-100%
+                        bri_pct = int((node._device.state.brightness / 255) * 100)
+                        total_brightness += bri_pct
+                        brightness_count += 1
                 # Count LEDs from device info
                 if node._device.info and node._device.info.led_count:
                     total_leds += node._device.info.led_count
+        
+        # Calculate average brightness
+        avg_brightness = 0
+        if brightness_count > 0:
+            avg_brightness = int(total_brightness / brightness_count)
         
         # Update controller stats
         self.setDriver('GV2', online_count)
         self.setDriver('GV3', devices_on)
         self.setDriver('GV4', total_leds)
+        self.setDriver('GV5', avg_brightness)
+        self.setDriver('GV6', self._last_effect)
     
     def stop(self):
         """Stop the controller node"""
@@ -644,6 +662,9 @@ class Controller(udi_interface.Node):
         """Set effect on all WLED devices"""
         effect_id = int(command.get('value', 0))
         LOGGER.info(f"Setting ALL devices effect to {effect_id}")
+        
+        # Track the last effect set via controller
+        self._last_effect = effect_id
         
         for address, device_info in self._devices.items():
             node = device_info.get('node')
