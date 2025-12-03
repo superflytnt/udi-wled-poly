@@ -1,6 +1,6 @@
 # WLED Polyglot v3 NodeServer
 
-[![Version](https://img.shields.io/badge/version-1.5.3-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![WLED](https://img.shields.io/badge/WLED-v0.13+-orange.svg)](https://kno.wled.ge/)
 
@@ -30,12 +30,15 @@ That's it! Your WLED devices will appear as nodes you can control just like any 
 | **Nightlight** | Auto-dim timer (15 min to 2 hours) |
 | **Sync** | Synchronize multiple WLED devices together |
 
-### Global Controls
+### Global Controls (Controller Node)
 
-Control all your WLED devices at once:
-- **All On / All Off** — Turn everything on or off with one click
-- **Set All Brightness** — Dim all devices to the same level
-- **Set All Effect** — Apply the same effect to every device
+Control all your WLED devices at once from the Controller node:
+- **On / Off** — Turn all devices on or off (works in scenes!)
+- **Brighten / Dim** — Adjust all devices by ~10%
+- **All Brightness** — Set all devices to specific brightness
+- **All Effect** — Apply the same effect to every device
+
+The Controller works as a **scene responder** — add it to an ISY scene and On/Off/Brighten/Dim will control all WLED devices.
 
 ---
 
@@ -108,14 +111,17 @@ The main controller shows an overview of all your WLED devices:
 | Online | How many devices are currently reachable |
 | On | How many devices are currently turned on |
 | Total LEDs | Combined LED count across all devices |
+| Avg Brightness | Average brightness across all online devices (0-100%) |
+| Effect | Last effect set via "All Effect" command |
 | Version | Plugin version |
 
 **Commands:**
-- **Discover Devices** — Scan network for new WLED devices
-- **Rebuild Presets** — Refresh effect and preset names from devices
-- **All On / All Off** — Control all devices at once
-- **Set All Brightness** — Set brightness for all devices
-- **Set All Effect** — Apply an effect to all devices
+- **On / Off** — Turn all devices on or off (scene-compatible)
+- **Brighten / Dim** — Adjust all devices by ~10%
+- **Discover** — Scan network for new WLED devices
+- **Rebuild Presets** — Refresh effect names from devices
+- **All Brightness** — Set brightness for all devices
+- **All Effect** — Apply an effect to all devices
 
 ### Device Nodes
 

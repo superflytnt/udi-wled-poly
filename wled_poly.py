@@ -27,7 +27,7 @@ from nodes import Controller
 
 LOGGER = udi_interface.LOGGER
 
-VERSION = '1.5.3'
+VERSION = '1.5.4'
 
 
 def main():

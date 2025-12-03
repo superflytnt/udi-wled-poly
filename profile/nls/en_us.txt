@@ -109,6 +109,7 @@ VER-150 = v1.5.0
 VER-151 = v1.5.1
 VER-152 = v1.5.2
 VER-153 = v1.5.3
+VER-154 = v1.5.4
 
 # Effect Names (WLED default effects) - Number: Name format
 EFFECT-0 = 0: Solid
