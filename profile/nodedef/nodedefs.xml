@@ -15,6 +15,8 @@
             <accepts>
                 <cmd id="DON" />
                 <cmd id="DOF" />
+                <cmd id="DFON" />
+                <cmd id="DFOF" />
                 <cmd id="DISCOVER" />
                 <cmd id="REBUILD_PRESETS" />
                 <cmd id="ALL_ON" />

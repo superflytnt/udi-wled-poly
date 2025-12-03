@@ -622,8 +622,10 @@ class Controller(udi_interface.Node):
         'ALL_OFF': cmd_all_off,
         'SET_ALL_BRI': cmd_set_all_brightness,
         'SET_ALL_EFFECT': cmd_set_all_effect,
-        # Scene support: DON/DOF map to ALL_ON/ALL_OFF for scene responder functionality
+        # Scene support: DON/DOF/DFON/DFOF map to ALL_ON/ALL_OFF for scene responder functionality
         'DON': cmd_all_on,
         'DOF': cmd_all_off,
+        'DFON': cmd_all_on,
+        'DFOF': cmd_all_off,
     }
 
