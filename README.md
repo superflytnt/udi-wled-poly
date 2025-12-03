@@ -198,9 +198,33 @@ Then
 - Check the WLED web interface works at `http://device-ip`
 - Check PG3 logs for error messages
 
-### Sync "Receive" Not Available
+---
 
-This is a limitation in WLED firmware (tested on v0.15.2). The WLED JSON API doesn't properly save the receive setting. Only "Send" sync mode is supported through this plugin.
+## Technical Limitations
+
+These are known platform or firmware limitations that affect how the plugin works.
+
+### Device Discovery Uses Network Scanning (Not mDNS)
+
+The standard way to discover WLED devices is via mDNS (Bonjour), but the eISY/Polisy system already uses the mDNS port (5353) for its own services. This plugin uses **direct IP scanning** instead, which scans the local subnet for devices responding to WLED API requests. Discovery may take 10-15 seconds but works reliably without port conflicts.
+
+### Preset Names Are Generic (Not Device-Specific)
+
+The UDI Polyglot platform uses a single shared NLS (National Language Support) file for all nodes of the same type. This means the preset dropdown shows the same labels for every WLED device—it's impossible to show device-specific preset names like "Party Mode" on one device and "Movie Lights" on another.
+
+**Workaround:** Presets are shown as generic IDs (1, 2, 3...). Refer to each WLED device's web interface to see what each preset number means for that device.
+
+### Sync "Receive" Mode Not Available
+
+WLED firmware (tested on v0.15.2) has a bug where the JSON API doesn't properly save the "receive" sync setting. The API call succeeds but the setting doesn't persist. Only "Send" sync mode is supported through this plugin.
+
+**Workaround:** Configure sync receive settings directly through the WLED web interface.
+
+### Save Preset Not Supported
+
+The WLED JSON API's `psave` command for saving presets doesn't work reliably across different firmware versions. The command was removed from this plugin to avoid confusion.
+
+**Workaround:** Save presets directly through the WLED web interface.
 
 ---
 
