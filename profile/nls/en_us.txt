@@ -46,7 +46,6 @@ CMD-wled_device-SET_BRI-NAME = Set Brightness
 CMD-wled_device-SET_EFFECT-NAME = Set Effect
 CMD-wled_device-SET_PALETTE-NAME = Set Palette
 CMD-wled_device-SET_PRESET-NAME = Load Preset
-CMD-wled_device-SAVE_PRESET-NAME = Save Preset
 CMD-wled_device-SET_COLOR-NAME = Set Color
 CMD-wled_device-SET_SPEED-NAME = Set Speed
 CMD-wled_device-SET_INTENSITY-NAME = Set Intensity

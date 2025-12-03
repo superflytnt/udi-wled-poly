@@ -70,9 +70,6 @@
                 <cmd id="SET_PRESET">
                     <p id="" editor="preset" />
                 </cmd>
-                <cmd id="SAVE_PRESET">
-                    <p id="" editor="preset" />
-                </cmd>
                 <cmd id="SET_COLOR">
                     <p id="R" editor="raw_byte" />
                     <p id="G" editor="raw_byte" />

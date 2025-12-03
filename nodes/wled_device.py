@@ -421,17 +421,6 @@ class WLEDDevice(udi_interface.Node):
             self._device.set_state(udpn={"send": send, "recv": recv})
             self.update_status()
     
-    def cmd_save_preset(self, command):
-        """Save current state to a preset slot"""
-        preset_id = int(command.get('value', 1))
-        LOGGER.info(f"Save Preset: {self.name} to slot {preset_id}")
-        
-        if self._device:
-            # psave = preset save (ID to save to)
-            # The preset will be saved with current state
-            self._device.set_state(psave=preset_id)
-            self.update_status()
-    
     def cmd_playlist_on(self, command):
         """Start a playlist"""
         playlist_id = int(command.get('value', 0)) if command and 'value' in command else 0
@@ -486,7 +475,6 @@ class WLEDDevice(udi_interface.Node):
         'SET_EFFECT': cmd_set_effect,
         'SET_PALETTE': cmd_set_palette,
         'SET_PRESET': cmd_set_preset,
-        'SAVE_PRESET': cmd_save_preset,
         'SET_COLOR': cmd_set_color,
         'SET_SPEED': cmd_set_speed,
         'SET_INTENSITY': cmd_set_intensity,
