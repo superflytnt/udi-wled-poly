@@ -1,6 +1,6 @@
 # WLED Polyglot v3 NodeServer
 
-[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![WLED](https://img.shields.io/badge/WLED-v0.13+-orange.svg)](https://kno.wled.ge/)
 
@@ -141,7 +141,6 @@ Each WLED device appears as its own node with full control:
 - **Set Effect** — Choose from 180+ effects
 - **Set Palette** — Choose color palette for effects
 - **Load Preset** — Load a saved configuration
-- **Save Preset** — Save current state to a preset slot
 - **Set Color** — Set RGB color values
 - **Set Speed / Intensity** — Adjust effect parameters
 - **Nightlight** — Set auto-dim timer (turns on device automatically)
@@ -203,10 +202,11 @@ This is a limitation in WLED firmware (tested on v0.15.2). The WLED JSON API doe
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **1.5.2** | 2025-12-03 | Generic preset IDs (per-device presets), removed Save Preset, reordered status fields |
 | **1.5.1** | 2025-12-02 | Effect metadata auto-rebuilds on startup |
 | **1.5.0** | 2025-12-02 | Global commands (All On/Off, Set All), Controller stats |
 | **1.4.x** | 2025-12-01 | Nightlight auto-on, combined Sync control, per-device rebuild |
-| **1.3.0** | 2025-12-01 | Save Preset, Playlists, Nightlight, Sync controls |
+| **1.3.0** | 2025-12-01 | Playlists, Nightlight, Sync controls |
 | **1.2.0** | 2025-12-01 | Speed, Intensity, Transition, Live Override |
 | **1.1.0** | 2025-12-01 | Effect metadata, parallel discovery |
 | **1.0.0** | 2025-12-01 | Initial release |
