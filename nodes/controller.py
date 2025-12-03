@@ -431,37 +431,35 @@ class Controller(udi_interface.Node):
         """
         Rebuild presets from all WLED devices.
         
-        Fetches presets from each device and updates the NLS file
-        with preset names for better ISY display.
+        Each device fetches and stores its own presets (device-specific).
+        The NLS file is updated with merged presets for ISY display.
         """
         LOGGER.info("Rebuilding presets from all WLED devices...")
         
         all_presets = {}
         
-        # Collect presets from all devices
+        # Have each device fetch its own presets (stored in device's _available_presets)
         for address, device_info in self._devices.items():
             node = device_info.get('node')
-            if node and hasattr(node, '_device') and node._device:
+            if node:
                 try:
-                    presets = node._device.get_presets()
-                    if presets:
-                        LOGGER.info(f"Device {address}: Found {len(presets)} presets")
-                        # Merge presets (using highest ID as unique)
-                        for preset_id, preset_name in presets.items():
+                    # Fetch device-specific presets (stored in node._available_presets)
+                    node._fetch_presets()
+                    
+                    # Collect for NLS merge (UI display shows union of all presets)
+                    if node._available_presets:
+                        LOGGER.info(f"Device {address}: Found {len(node._available_presets)} presets")
+                        for preset_id, preset_name in node._available_presets.items():
                             if preset_id not in all_presets:
                                 all_presets[preset_id] = preset_name
                 except Exception as e:
                     LOGGER.warning(f"Failed to get presets from {address}: {e}")
         
         if all_presets:
-            LOGGER.info(f"Total unique presets found: {len(all_presets)}")
+            LOGGER.info(f"Total unique presets for NLS: {len(all_presets)}")
             self._update_preset_nls(all_presets)
-            
-            # Store presets for each device node
-            for address, device_info in self._devices.items():
-                node = device_info.get('node')
-                if node:
-                    node._available_presets = all_presets
+            # Note: Each device keeps its own presets in _available_presets
+            # The NLS file contains merged presets for UI dropdown display
         else:
             LOGGER.warning("No presets found on any device")
         
