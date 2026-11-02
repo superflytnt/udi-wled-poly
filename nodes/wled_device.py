@@ -398,9 +398,10 @@ class WLEDDevice(udi_interface.Node):
     
     def cmd_set_color(self, command):
         """Set RGB color"""
-        r = int(command.get('R.uom56', command.get('R', 255)))
-        g = int(command.get('G.uom56', command.get('G', 255)))
-        b = int(command.get('B.uom56', command.get('B', 255)))
+        query = command.get('query') or {}
+        r = int(query.get('R.uom56', query.get('R', command.get('R.uom56', command.get('R', 255)))))
+        g = int(query.get('G.uom56', query.get('G', command.get('G.uom56', command.get('G', 255)))))
+        b = int(query.get('B.uom56', query.get('B', command.get('B.uom56', command.get('B', 255)))))
         
         LOGGER.info(f"Set Color: {self.name} to RGB({r},{g},{b})")
         
