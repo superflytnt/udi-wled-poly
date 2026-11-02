@@ -144,7 +144,7 @@ class Controller(udi_interface.Node):
 
 <table border="1" cellpadding="10" style="border-collapse: collapse;">
   <tr><th align="left">Key</th><th align="left">Value</th></tr>
-  <tr><td><b>devices</b></td><td>arcade:192.168.1.112,bar:192.168.1.185,kitchen:192.168.1.99</td></tr>
+  <tr><td><b>devices</b></td><td>controller1:192.0.2.10,controller2:192.0.2.11</td></tr>
 </table>
 
 <br>
