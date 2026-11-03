@@ -1,5 +1,13 @@
 # WLED Polyglot v3 NodeServer
 
+## Why this change was needed
+
+This is the existing WLED node server repository, not a new fork. The 1.5.6 repair fixes how device nodes read RGB values from an eISY SET_COLOR command. PG3 supplies the named R/G/B parameters inside the command's query dictionary; the previous code looked in the outer dictionary and could fall back to white instead of the requested color.
+
+The corrected device-node command was tested through eISY with exact RGB readback. Controller All On and All Off also passed for five reachable WLED controllers, which were left off after testing. An unreachable controller could not be verified. The similar segment-node color handler is not covered by this repair.
+
+The installed program files were checked against this repository. The plugin rebuilds its local effect-name list from a reachable controller at startup, so that generated list can differ from the static list in GitHub. That difference is not a newer unpushed program fix. Intermittent eISY HTTP 404 responses were observed, including a response to a command that had already applied; their cause is not established.
+
 [![Version](https://img.shields.io/badge/version-1.5.5-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![WLED](https://img.shields.io/badge/WLED-v0.13+-orange.svg)](https://kno.wled.ge/)
