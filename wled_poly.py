@@ -27,7 +27,7 @@ from nodes import Controller
 
 LOGGER = udi_interface.LOGGER
 
-VERSION = '1.5.5'
+VERSION = '1.5.7'
 
 
 def main():
@@ -71,4 +71,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
