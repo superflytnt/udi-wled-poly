@@ -24,7 +24,7 @@ class Controller(udi_interface.Node):
     id = 'controller'
     
     # Plugin version (major*100 + minor*10 + patch)
-    VERSION = 155  # v1.5.5
+    VERSION = 157  # v1.5.7
     
     # Node drivers (status values)
     drivers = [
@@ -63,6 +63,7 @@ class Controller(udi_interface.Node):
         # Configuration
         self._config_done = False
         self._custom_params = Custom(polyglot, 'customparams')
+        self._heartbeat_url = ''
         
         # Subscribe to events
         polyglot.subscribe(polyglot.START, self.start, address)
@@ -114,6 +115,13 @@ class Controller(udi_interface.Node):
         # Get custom parameters
         params = self._custom_params
         
+        # Optional external heartbeat URL (e.g. uptime monitor). Pinged on
+        # every short poll, regardless of device state, so an external
+        # service can tell a frozen plugin from an idle one.
+        self._heartbeat_url = params.get('heartbeat_url', '').strip()
+        if self._heartbeat_url:
+            LOGGER.info("Heartbeat URL configured - pinging on every short poll")
+
         # Look for 'devices' parameter
         # Format: "name1:192.168.1.100,name2:192.168.1.101"
         devices_str = params.get('devices', '')
@@ -132,7 +140,7 @@ class Controller(udi_interface.Node):
         """Set configuration documentation - displays in PG3 Configuration tab"""
         html = '''
 <h2>WLED Polyglot v3 NodeServer</h2>
-<p style="color: #888;">Version 1.5.5</p>
+<p style="color: #888;">Version 1.5.7</p>
 
 <br>
 
@@ -150,6 +158,15 @@ class Controller(udi_interface.Node):
 <br>
 
 <p><i>Format: name1:ip1,name2:ip2,name3:ip3</i></p>
+
+<br><br>
+
+<h3>External Heartbeat (optional)</h3>
+
+<p>Add Custom Parameter <b>heartbeat_url</b> with a heartbeat/cron-monitor URL
+(e.g. UptimeRobot heartbeat) as the value. The plugin pings it on every short
+poll - even when all devices are off or unreachable - so your monitor alerts
+when the plugin itself freezes. Leave empty to disable.</p>
 
 <br><br>
 
@@ -307,11 +324,30 @@ class Controller(udi_interface.Node):
         """
         if polltype == 'shortPoll':
             LOGGER.debug("Short poll - updating device status")
+            self._ping_heartbeat()
             self._poll_devices()
         elif polltype == 'longPoll':
             LOGGER.debug("Long poll - full device sync")
             self._poll_devices(full_sync=True)
     
+    def _ping_heartbeat(self):
+        """
+        Ping the configured external heartbeat URL, if any.
+
+        Fires on every short poll whether or not any device is online,
+        reachable, or even configured: the signal is plugin liveness, not
+        device state. Failures are logged, never raised - a network hiccup
+        must not break the poll loop.
+        """
+        if not self._heartbeat_url:
+            return
+        import urllib.request
+        try:
+            with urllib.request.urlopen(self._heartbeat_url, timeout=5) as resp:
+                LOGGER.debug(f"Heartbeat ping sent (HTTP {resp.status})")
+        except Exception as e:
+            LOGGER.warning(f"Heartbeat ping failed: {e}")
+
     def _poll_devices(self, full_sync: bool = False):
         """
         Poll all devices for status.
@@ -692,4 +728,3 @@ class Controller(udi_interface.Node):
         'BRT': cmd_all_brighten,
         'DIM': cmd_all_dim,
     }
-
