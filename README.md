@@ -8,7 +8,7 @@ The corrected device-node command was tested through eISY with exact RGB readbac
 
 The installed program files were checked against this repository. The plugin rebuilds its local effect-name list from a reachable controller at startup, so that generated list can differ from the static list in GitHub. That difference is not a newer unpushed program fix. Intermittent eISY HTTP 404 responses were observed, including a response to a command that had already applied; their cause is not established.
 
-[![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.5.8-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![WLED](https://img.shields.io/badge/WLED-v0.13+-orange.svg)](https://kno.wled.ge/)
 
@@ -253,6 +253,7 @@ The WLED JSON API's `psave` command for saving presets doesn't work reliably acr
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **1.5.8** | 2026-11-07 | Heartbeat pings throttled to at most one per 60 seconds, so fast poll intervals cannot trip monitor-endpoint rate limits (HTTP 429) |
 | **1.5.7** | 2026-11-07 | External heartbeat: optional `heartbeat_url` custom parameter, pinged every short poll regardless of device state (works with UptimeRobot and other cron monitors) |
 | **1.5.6** | 2026-11-02 | RGB repair: device nodes read R/G/B from the command query dictionary |
 | **1.5.5** | 2025-12-03 | Next/Prev Preset commands for cycling through presets via scenes |
