@@ -64,6 +64,7 @@ class Controller(udi_interface.Node):
         self._config_done = False
         self._custom_params = Custom(polyglot, 'customparams')
         self._heartbeat_url = ''
+        self._heartbeat_last = 0.0  # monotonic time of last ping attempt
         
         # Subscribe to events
         polyglot.subscribe(polyglot.START, self.start, address)
@@ -341,6 +342,14 @@ when the plugin itself freezes. Leave empty to disable.</p>
         """
         if not self._heartbeat_url:
             return
+        # Throttle attempts to at most one per 60s: monitoring endpoints
+        # (e.g. UptimeRobot) rate-limit faster pings with HTTP 429, and the
+        # monitor only needs a ping inside its own expected interval.
+        import time
+        now = time.monotonic()
+        if now - self._heartbeat_last < 60:
+            return
+        self._heartbeat_last = now
         import urllib.request
         try:
             with urllib.request.urlopen(self._heartbeat_url, timeout=5) as resp:
