@@ -8,7 +8,7 @@ The corrected device-node command was tested through eISY with exact RGB readbac
 
 The installed program files were checked against this repository. The plugin rebuilds its local effect-name list from a reachable controller at startup, so that generated list can differ from the static list in GitHub. That difference is not a newer unpushed program fix. Intermittent eISY HTTP 404 responses were observed, including a response to a command that had already applied; their cause is not established.
 
-[![Version](https://img.shields.io/badge/version-1.5.5-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
+[![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)](https://github.com/superflytnt/udi-wled-poly)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![WLED](https://img.shields.io/badge/WLED-v0.13+-orange.svg)](https://kno.wled.ge/)
 
@@ -104,6 +104,18 @@ If auto-discovery doesn't find a device, you can add it manually:
 
 - **name** = What you want to call the device (no spaces)
 - **ip** = The device's IP address
+
+### External Heartbeat (Optional)
+
+To monitor the plugin itself (not just your devices), add a **Custom Parameter**:
+
+| Key | Value |
+|-----|-------|
+| `heartbeat_url` | Your heartbeat/cron-monitor URL (e.g. an UptimeRobot heartbeat) |
+
+The plugin pings this URL on every short poll - even when every device is off
+or unreachable - so your monitoring service alerts you when the plugin freezes
+or stops polling. Leave it empty (the default) to disable the ping.
 
 ---
 
@@ -241,6 +253,8 @@ The WLED JSON API's `psave` command for saving presets doesn't work reliably acr
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **1.5.7** | 2026-11-07 | External heartbeat: optional `heartbeat_url` custom parameter, pinged every short poll regardless of device state (works with UptimeRobot and other cron monitors) |
+| **1.5.6** | 2026-11-02 | RGB repair: device nodes read R/G/B from the command query dictionary |
 | **1.5.5** | 2025-12-03 | Next/Prev Preset commands for cycling through presets via scenes |
 | **1.5.4** | 2025-12-03 | Controller status: Avg Brightness & Effect display, cleaned up redundant commands |
 | **1.5.3** | 2025-12-03 | Scene support: Controller responds to On/Off/Brighten/Dim for use as scene responder |
