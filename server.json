@@ -14,5 +14,7 @@
     }
   ],
   "docs": "https://github.com/superflytnt/udi-wled-poly",
-  "logLevel": "INFO"
+  "logLevel": "INFO",
+  "install": "install.sh",
+  "description": "WLED control for PG3x/eISY: power, brightness, RGB, effects, palettes, presets, scenes and playlists."
 }
