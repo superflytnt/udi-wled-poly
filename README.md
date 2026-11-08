@@ -37,6 +37,9 @@ That's it! Your WLED devices will appear as nodes you can control just like any 
 | **Speed & Intensity** | Fine-tune how effects look |
 | **Nightlight** | Auto-dim timer (15 min to 2 hours) |
 | **Sync** | Synchronize multiple WLED devices together |
+| **Transition** | Set fade/transition timing between changes |
+| **Live Override** | Control how live/realtime data overrides current settings |
+| **Playlists** | Start and stop WLED playlists |
 
 ### Global Controls (Controller Node)
 
@@ -160,6 +163,8 @@ Each WLED device appears as its own node with full control:
 | Intensity | Effect intensity |
 | Nightlight | Auto-dim timer status |
 | Sync | UDP sync status |
+| Transition | Current transition timing |
+| Live Override | Live override mode |
 
 **Commands:**
 - **On / Off** — Basic power control
@@ -170,6 +175,9 @@ Each WLED device appears as its own node with full control:
 - **Next Preset / Prev Preset** — Cycle through presets (great for scenes!)
 - **Set Color** — Set RGB color values
 - **Set Speed / Intensity** — Adjust effect parameters
+- **Set Transition** — Adjust transition timing
+- **Live Override** — Set live override mode
+- **Start Playlist / Stop Playlist** — Control WLED playlists
 - **Nightlight** — Set auto-dim timer (turns on device automatically)
 - **Sync** — Enable UDP sync to other WLED devices
 - **Rebuild Presets** — Refresh preset list from this device
@@ -291,3 +299,4 @@ MIT License — See [LICENSE](LICENSE) file
 - [WLED Project](https://kno.wled.ge/) — The amazing LED controller firmware
 - [Universal Devices](https://www.universal-devices.com/) — ISY and Polyglot platform
 - [udi-interface](https://pypi.org/project/udi-interface/) — Python interface for Polyglot v3
+
